@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BD99 Club</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #050505; color: #fff; max-width: 480px; margin: 0 auto; min-height: 100vh; overflow-x: hidden; touch-action: manipulation; }
+        .text-gold { color: #d4af37; } .bg-gold { background-color: #d4af37; } .border-gold { border-color: #d4af37; }
+        .bd99-gradient { background: linear-gradient(90deg, #d4af37 0%, #aa8e2d 100%); }
+        .bg-dark-card { background-color: #121212; border: 1px solid #222; }
+        .hidden-el { display: none !important; }
+        input, select { background: #1a1a1a !important; color: white !important; border: 1px solid #333 !important; outline: none; }
+        input:focus, select:focus { border-color: #d4af37 !important; }
+        
+        /* DEPOSIT PAGE STYLES */
+        .top-method-active { border: 2px solid #d4af37 !important; background: rgba(212, 175, 55, 0.1) !important; position: relative; }
+        .top-method-active::after { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; top: 2px; right: 4px; color: #d4af37; font-size: 10px; }
+        .channel-card { background-color: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.2s; }
+        .channel-active { background-color: #d4af37 !important; border-color: #d4af37 !important; color: #000 !important; }
+        .channel-active .c-title { font-weight: 900 !important; color: #000 !important; }
+        .channel-active .c-sub { color: #333 !important; }
+        .amt-btn-active { border-color: #d4af37 !important; color: #d4af37 !important; background: rgba(212, 175, 55, 0.1) !important; }
+        .instruction-list li { position: relative; padding-left: 15px; margin-bottom: 8px; font-size: 11px; color: #9ca3af; }
+        .instruction-list li::before { content: ''; position: absolute; left: 0; color: #d4af37; font-size: 10px; }
+
+        /* GTPAY GATEWAY STYLES */
+        .gateway-full { position: fixed; inset: 0; z-index: 5000; background: #fff; color: #333; overflow-y: auto; max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; height: 100dvh; width: 100%; }
+        .gtpay-header { background-color: #0b6b3a; padding: 20px; }
+        .gt-input { background: #fff !important; border: 2px solid #e11d48 !important; color: #000 !important; padding: 16px; border-radius: 6px; width: 100%; font-size: 15px; }
+        .gt-input::placeholder { color: #999; font-weight: 500; }
+
+        /* UPDATED PROMOTION / SUBORDINATE STYLES */
+        .promo-header-bg { background: linear-gradient(135deg, #1e1e1e 0%, #000000 100%); border-bottom: 2px solid #d4af37; }
+        .promo-tab-active { color: #d4af37; border-bottom: 3px solid #d4af37; font-weight: 900; background: rgba(212, 175, 55, 0.05); }
+        .promo-tab-inactive { color: #666; font-weight: 600; }
+        .date-tab-active { background-color: #d4af37; color: #000; font-weight: bold; border-radius: 6px; }
+        .date-tab-inactive { background-color: #f3f4f6; color: #666; font-weight: bold; border-radius: 6px; }
+        .history-card-light { background: #fff; color: #333; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #eee; margin-bottom: 12px; overflow: hidden; }
+
+        /* LIVE WINNERS ANIMATION */
+        @keyframes slideUpFade { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+        .win-item-anim { animation: slideUpFade 0.4s ease forwards; }
+
+        .ball { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .bg-g { background: #22c55e; color: white; } .bg-r { background: #ef4444; color: white; } .bg-v { background: #a855f7; color: white; }
+        .bg-0 { background: linear-gradient(135deg, #ef4444 50%, #a855f7 50%); } .bg-5 { background: linear-gradient(135deg, #22c55e 50%, #a855f7 50%); }
+        #csFloatBtn { position: fixed; bottom: 100px; right: 20px; z-index: 9999; width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #d4af37, #aa8e2d); box-shadow: 0 4px 15px rgba(212,175,55,0.4); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-left: 2px; }
+        .dot-green { background-color: #22c55e; } .dot-red { background-color: #ef4444; } .dot-violet { background-color: #a855f7; }
+        .result-popup { animation: popUpScale 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; transform: scale(0.5); opacity: 0; z-index: 10000; }
+        @keyframes popUpScale { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .confetti { position: absolute; width: 10px; height: 10px; background-color: #ffd700; animation: fall 3s linear infinite; }
+        @keyframes fall { 0% { transform: translateY(-100px) rotate(0deg); opacity: 1; } 100% { transform: translateY(600px) rotate(720deg); opacity: 0; } }
+    </style>
+</head>
+<body class="bg-black text-gray-200">
+
+<div id="app" class="relative min-h-screen pb-20">
+
+    <!-- FLOATING CS BUTTON -->
+    <div id="csFloatBtn" onclick="window.open('https://t.me/Aaxun_V', '_blank')">
+        <i class="fas fa-headset text-black text-2xl"></i>
+    </div>
+
+    <!-- AUTH PAGE -->
+    <div id="authPage" class="fixed inset-0 z-[2000] bg-black overflow-y-auto">
+        <div class="h-64 bg-gradient-to-b from-[#1a1a1a] to-black flex flex-col justify-center items-center px-6 text-center">
+            <h1 class="text-5xl font-black italic text-gold tracking-tighter mb-2">BD99</h1>
+            <p class="text-gray-500 text-xs tracking-[0.3em] uppercase">Premium Gaming Club</p>
+        </div>
+        <div class="px-6 -mt-10">
+            <div class="bg-dark-card rounded-2xl p-6 shadow-2xl">
+                <div class="flex mb-6 border-b border-[#333]">
+                    <button onclick="toggleAuth('login')" id="loginTab" class="flex-1 pb-3 text-gold font-bold border-b-2 border-gold">Login</button>
+                    <button onclick="toggleAuth('reg')" id="regTab" class="flex-1 pb-3 text-gray-500">Register</button>
+                </div>
+                <div class="space-y-4">
+                    <div><label class="text-xs text-gray-500 uppercase font-bold pl-2">Phone</label><input type="number" id="authPhone" class="w-full p-4 rounded-xl mt-1 text-sm font-bold placeholder-gray-600" placeholder="017xxxxxxxx"></div>
+                    <div id="inviteCodeBox" class="hidden-el"><label class="text-xs text-gray-500 uppercase font-bold pl-2">Invite Code</label><input type="text" id="authInviteCode" class="w-full p-4 rounded-xl mt-1 text-sm font-bold placeholder-gray-600" placeholder="Required for Register"></div>
+                    <div><label class="text-xs text-gray-500 uppercase font-bold pl-2">Password</label><input type="password" id="authPass" class="w-full p-4 rounded-xl mt-1 text-sm font-bold placeholder-gray-600" placeholder="%u2022%u2022%u2022%u2022%u2022%u2022"></div>
+                    <div id="confirmPassBox" class="hidden-el"><label class="text-xs text-gray-500 uppercase font-bold pl-2">Confirm Password</label><input type="password" id="authConfirmPass" class="w-full p-4 rounded-xl mt-1 text-sm font-bold placeholder-gray-600" placeholder="%u2022%u2022%u2022%u2022%u2022%u2022"></div>
+                    <button onclick="handleAuth()" id="authBtn" class="w-full bd99-gradient text-black font-black py-4 rounded-xl mt-4 shadow-lg text-lg transform active:scale-95 transition">LOG IN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="mainContent" class="hidden-el">
+        <header class="bg-[#0a0a0a] px-4 py-3 flex justify-between items-center sticky top-0 z-40 border-b border-[#222] shadow-lg">
+            <h1 class="text-xl font-black italic text-white tracking-wider"><span class="text-gold">BD99</span> Club</h1>
+            <div class="flex gap-4 text-gray-400 text-lg">
+                <i class="fas fa-gift cursor-pointer hover:text-gold" onclick="openGiftModal()"></i>
+                <i class="fas fa-headset cursor-pointer hover:text-gold" onclick="window.open('https://t.me/Aaxun_V', '_blank')"></i>
+            </div>
+        </header>
+
+        <!-- HOME -->
+        <div id="page-home" class="page-sec">
+            <div class="p-4">
+                <div class="w-full h-40 rounded-2xl bg-dark-card flex items-center justify-center mb-4 relative overflow-hidden group cursor-pointer">
+                    <img src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=800&q=80" class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-105 transition duration-700">
+                    <div class="relative z-10 text-center"><h2 class="text-3xl font-black italic text-white drop-shadow-lg">WIN GO</h2><p class="text-gold text-xs font-bold tracking-widest uppercase mt-1">Make Money Fast</p></div>
+                </div>
+                <div class="bg-dark-card rounded-full px-3 py-2 flex items-center gap-2 mb-6 border border-[#222]">
+                    <i class="fas fa-bullhorn text-gold animate-pulse"></i><marquee class="text-xs text-gray-400 font-medium">Welcome to BD99 Club. The #1 Professional Trading Platform in Bangladesh.</marquee>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div onclick="openGame()" class="bg-gradient-to-br from-[#1a1a1a] to-[#000] border border-[#333] p-4 rounded-xl relative overflow-hidden cursor-pointer hover:border-gold transition group">
+                        <div class="absolute right-0 top-0 p-2 opacity-10 group-hover:opacity-20 transition"><i class="fas fa-dice text-6xl text-white"></i></div>
+                        <div class="relative z-10"><div class="w-10 h-10 rounded-lg bg-[#222] flex items-center justify-center text-2xl mb-2 text-gold"></div><h3 class="font-black text-lg text-white">Win Go</h3><p class="text-[10px] text-gray-500">30 second </p></div>
+                    </div>
+                    <div class="bg-[#111] border border-[#333] p-4 rounded-xl relative overflow-hidden opacity-50 cursor-not-allowed">
+                        <div class="relative z-10"><div class="w-10 h-10 rounded-lg bg-[#222] flex items-center justify-center text-2xl mb-2 text-gray-600"></div><h3 class="font-black text-lg text-gray-500">Slots</h3><p class="text-[10px] text-gray-600">Maintenance</p></div>
+                    </div>
+                </div>
+
+                <!-- WINNING INFORMATION & LEADERBOARD SECTION -->
+                <div class="mb-6 mt-4">
+                    <h3 class="text-[15px] font-bold text-white flex items-center gap-2 mb-3 tracking-wide">
+                        <i class="fas fa-coins text-gold text-lg"></i> Winning information
+                    </h3>
+                    <div id="liveWinningFeed" class="space-y-2 overflow-hidden h-[255px] relative mask-image-bottom">
+                        <!-- JS Will Inject Items Here -->
+                    </div>
+                </div>
+
+                <div class="bg-dark-card rounded-2xl p-4 border border-[#222] shadow-lg mb-4">
+                    <h3 class="text-[15px] font-bold text-white flex items-center gap-2 mb-5 tracking-wide">
+                        <i class="fas fa-chart-bar text-gold text-lg"></i> Today's earnings chart
+                    </h3>
+                    <div id="dailyLeaderboardList" class="space-y-1">
+                        <!-- JS Will Inject Items Here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIVITY -->
+        <div id="page-activity" class="page-sec hidden-el">
+            <div class="bg-dark-card sticky top-14 z-20">
+                <div class="flex text-center text-sm font-bold border-b border-[#333]">
+                    <div onclick="setActivityTab('bets')" id="act-tab-bets" class="flex-1 py-4 cursor-pointer text-gold border-b-2 border-gold">Bet History</div>
+                    <div onclick="setActivityTab('finance')" id="act-tab-finance" class="flex-1 py-4 cursor-pointer text-gray-500">Transaction</div>
+                </div>
+            </div>
+            <div id="activity-bets" class="p-0"></div><div id="activity-finance" class="hidden-el p-0"></div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- UPDATED PROMOTION (AGENCY) PAGE            -->
+        <!-- ========================================== -->
+        <div id="page-promotion" class="page-sec hidden-el bg-[#f3f4f6]">
+            <!-- Header Section -->
+            <div class="promo-header-bg p-6 pb-8 text-center relative">
+                <h2 class="text-xl font-black text-white tracking-widest mb-1">AGENCY CENTER</h2>
+                <p class="text-xs text-gold font-bold mb-5">Earn Unlimited Commission</p>
+                
+                <div class="bg-[#111] border border-[#333] rounded-2xl p-5 shadow-2xl relative z-10">
+                    <div class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">TOTAL COMMISSION</div>
+                    <div class="text-[36px] font-black text-white tracking-tight flex justify-center items-center gap-1">
+                        <span class="text-gold text-2xl"></span> <span id="yesterdayComm">0.00</span>
+                    </div>
+                    <div class="mt-4 flex justify-between items-center text-xs">
+                        <div class="text-left">
+                            <div class="text-gray-500">Direct Commission</div>
+                            <div class="text-white font-bold" id="yestDirectComm">৳30.00</div>
+                        </div>
+                        <div class="w-px h-6 bg-[#333]"></div>
+                        <div class="text-right">
+                            <div class="text-gray-500">Team Commission</div>
+                            <div class="text-white font-bold" id="yestTeamComm">৳30.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="px-4 mt-2 relative z-10 pb-24">
+                
+                <!-- Daily Filter Tabs -->
+                <div class="flex bg-white p-1 rounded-lg border border-gray-200 shadow-sm mb-4">
+                    <button id="promoDateToday" onclick="setPromoDateTab('today')" class="flex-1 py-2 date-tab-active text-sm transition-all">Today</button>
+                    <button id="promoDateYesterday" onclick="setPromoDateTab('yesterday')" class="flex-1 py-2 date-tab-inactive text-sm transition-all">Yesterday</button>
+                </div>
+
+                <!-- Data Card -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-4">
+                    <div class="flex text-center text-[14px]">
+                        <div class="flex-1 py-3.5 promo-tab-active cursor-pointer transition-all" id="promo-tab-direct" onclick="togglePromoTab('direct')">Direct Subordinates</div>
+                        <div class="flex-1 py-3.5 promo-tab-inactive cursor-pointer transition-all" id="promo-tab-team" onclick="togglePromoTab('team')">Team Subordinates</div>
+                    </div>
+                    
+                    <!-- Direct Content -->
+                    <div id="promo-content-direct" class="p-5 grid grid-cols-2 gap-y-6 gap-x-4 text-center">
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <div class="text-[22px] font-black text-gray-800" id="st_dir_reg">0</div>
+                            <div class="text-[11px] text-gray-500 font-bold mt-1">Registers</div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <div class="text-[22px] font-black text-gray-800" id="st_dir_depNum">0</div>
+                            <div class="text-[11px] text-gray-500 font-bold mt-1">Deposit Accounts</div>
+                        </div>
+                        <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                            <div class="text-[22px] font-black text-yellow-600" id="st_dir_depAmt">0</div>
+                            <div class="text-[11px] text-yellow-700 font-bold mt-1">Deposit Amount</div>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            <div class="text-[22px] font-black text-blue-600" id="st_dir_betAmt">0</div>
+                            <div class="text-[11px] text-blue-700 font-bold mt-1">Total Betting</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Team Content -->
+                    <div id="promo-content-team" class="hidden-el p-5 grid grid-cols-2 gap-y-6 gap-x-4 text-center">
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <div class="text-[22px] font-black text-gray-800" id="st_team_reg">0</div>
+                            <div class="text-[11px] text-gray-500 font-bold mt-1">Team Registers</div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <div class="text-[22px] font-black text-gray-800" id="st_team_depNum">0</div>
+                            <div class="text-[11px] text-gray-500 font-bold mt-1">Team Depositors</div>
+                        </div>
+                        <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                            <div class="text-[22px] font-black text-yellow-600" id="st_team_depAmt">0</div>
+                            <div class="text-[11px] text-yellow-700 font-bold mt-1">Team Dep. Amount</div>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            <div class="text-[22px] font-black text-blue-600" id="st_team_betAmt">0</div>
+                            <div class="text-[11px] text-blue-700 font-bold mt-1">Team Total Bet</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Menu Buttons -->
+                <div class="space-y-3">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center cursor-pointer hover:border-gold transition" onclick="copyRefLink()">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-yellow-50 border border-yellow-100 flex items-center justify-center text-yellow-600 text-lg"><i class="fas fa-link"></i></div>
+                            <div>
+                                <span class="font-bold text-gray-800 text-sm block">Copy Invitation Link</span>
+                                <span class="text-[10px] text-gray-400 font-mono" id="myInviteCodeText">...</span>
+                            </div>
+                        </div>
+                        <i class="far fa-copy text-gray-400 text-xl"></i>
+                    </div>
+                    
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center cursor-pointer hover:border-gold transition" onclick="openSubordinatePage()">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 text-lg"><i class="fas fa-users"></i></div>
+                            <span class="font-bold text-gray-800 text-sm">Subordinate Data</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center cursor-pointer hover:border-gold transition" onclick="openCommissionDetail()">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-green-50 border border-green-100 flex items-center justify-center text-green-500 text-lg"><i class="fas fa-dollar-sign"></i></div>
+                            <span class="font-bold text-gray-800 text-sm">Commission Detail</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <input type="text" id="referralLink" class="hidden-el">
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SUBORDINATE DATA PAGE                      -->
+        <!-- ========================================== -->
+        <div id="page-subordinate" class="hidden-el fixed inset-0 z-[100] bg-[#f3f4f6] overflow-y-auto max-w-[480px] mx-auto pb-10">
+            <div class="bg-white p-4 flex items-center shadow-sm sticky top-0 z-20 border-b border-gray-200">
+                <i onclick="closeSubordinatePage()" class="fas fa-angle-left text-gray-800 text-2xl px-2 cursor-pointer active:scale-90 transition"></i>
+                <h2 class="font-black text-gray-800 text-lg flex-1 text-center pr-6">Subordinate Data</h2>
+            </div>
+            <div class="p-4">
+                <div class="flex gap-2 mb-3">
+                    <div class="relative flex-1">
+                        <input type="text" id="subSearchInput" placeholder="Search by UID" class="w-full bg-white border border-gray-200 text-gray-700 text-sm p-3.5 rounded-lg shadow-sm outline-none focus:border-gold">
+                        <button onclick="renderSubordinates()" class="absolute right-1.5 top-1.5 bottom-1.5 bg-gold text-black px-4 rounded-md font-bold"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+                <div class="flex gap-2 mb-4">
+                    <select id="subLevelFilter" onchange="renderSubordinates()" class="w-1/3 bg-white border border-gray-200 text-gray-700 text-sm p-3.5 rounded-lg shadow-sm font-bold outline-none">
+                        <option value="All">All Level</option>
+                        <option value="1">Level 1</option>
+                        <option value="2">Level 2</option>
+                        <option value="3">Level 3</option>
+                    </select>
+                    <input type="date" id="subDateFilter" onchange="renderSubordinates()" class="w-2/3 bg-white border border-gray-200 text-gray-700 text-sm p-3.5 rounded-lg shadow-sm font-bold outline-none">
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="bg-[#111] rounded-xl p-4 grid grid-cols-2 gap-y-5 gap-x-3 text-center text-white font-bold mb-5 shadow-lg border border-[#333]">
+                    <div><div class="text-2xl text-gold" id="sub_stat_depNum">0</div><div class="text-[10px] font-medium text-gray-400 mt-1 uppercase">Depositors</div></div>
+                    <div><div class="text-2xl text-gold" id="sub_stat_depAmt">0</div><div class="text-[10px] font-medium text-gray-400 mt-1 uppercase">Deposit Amount</div></div>
+                    <div><div class="text-2xl text-blue-400" id="sub_stat_bettors">0</div><div class="text-[10px] font-medium text-gray-400 mt-1 uppercase">Total Bettors</div></div>
+                    <div><div class="text-2xl text-blue-400" id="sub_stat_totBet">0</div><div class="text-[10px] font-medium text-gray-400 mt-1 uppercase">Total Bet Amount</div></div>
+                </div>
+
+                <h3 class="text-sm font-bold text-gray-800 mb-3 pl-1 border-l-4 border-gold ml-1">Member List</h3>
+                <div id="subordinateListContainer" class="space-y-3">
+                    <p class="text-center text-gray-500 py-10 text-sm font-bold"><i class="fas fa-spinner fa-spin mr-2"></i>Loading real-time data...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- COMMISSION DETAIL PAGE                                     -->
+        <!-- ========================================================== -->
+        <div id="page-commission" class="hidden-el fixed inset-0 z-[100] bg-[#f3f4f6] overflow-y-auto max-w-[480px] mx-auto pb-10">
+            <div class="bg-white p-4 flex items-center shadow-sm sticky top-0 z-20 border-b border-gray-200">
+                <i onclick="closeCommissionDetail()" class="fas fa-angle-left text-gray-800 text-2xl px-2 cursor-pointer active:scale-90 transition"></i>
+                <h2 class="font-black text-gray-800 text-lg flex-1 text-center pr-6">Commission History</h2>
+            </div>
+            <div class="p-4">
+                <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white shadow-lg mb-5 text-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
+                    <p class="text-xs font-bold text-yellow-100 uppercase tracking-widest mb-2 relative z-10">Total Commission Claimed</p>
+                    <h3 class="text-4xl font-black relative z-10">৳<span id="totCommDetail">0.00</span></h3>
+                </div>
+                <div id="commissionListContainer" class="space-y-3">
+                    <!-- JS will inject commission history here -->
+                </div>
+            </div>
+        </div>
+        <!-- ========================================================== -->
+
+        <!-- GIFT CODE PAGE -->
+        <div id="page-gift" class="page-sec hidden-el">
+            <div class="bg-gradient-to-b from-[#1a1a1a] to-black p-6 pb-12 rounded-b-[40px] border-b border-[#222]">
+                <h2 class="text-2xl font-black text-white text-center mb-6">GIFT REDEMPTION</h2>
+                <div class="relative">
+                    <input type="text" id="giftInputCode" class="w-full p-4 rounded-xl bg-[#000] border border-[#333] text-center text-gold font-black text-lg tracking-[0.2em] placeholder-gray-700 uppercase" placeholder="ENTER CODE">
+                    <button onclick="redeemGift()" class="absolute right-2 top-2 bottom-2 bg-gold text-black px-6 rounded-lg font-bold hover:bg-white transition">CLAIM</button>
+                </div>
+            </div>
+            <div class="px-4 -mt-8">
+                <div class="bg-dark-card rounded-xl p-4 shadow-xl mb-6">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-400 font-bold uppercase">Total Received</span>
+                        <span class="text-xl font-black text-gold">৳<span id="giftTotalAmount">0.00</span></span>
+                    </div>
+                </div>
+                <h3 class="text-sm font-bold text-gray-500 mb-3 uppercase pl-2">History</h3>
+                <div id="giftHistoryList" class="space-y-3 pb-20"></div>
+            </div>
+        </div>
+
+        <!-- WALLET -->
+        <div id="page-wallet" class="page-sec hidden-el pb-24">
+            <div class="bg-[#0a0a0a] p-6 text-center border-b border-[#222]">
+                <p class="text-xs text-gray-500 font-bold uppercase mb-2">Total Balance</p>
+                <h2 class="text-5xl font-black text-white mb-6">৳ <span class="userBalance">0.00</span> <i onclick="refreshBalance()" class="fas fa-sync-alt text-sm text-gold ml-2 cursor-pointer"></i></h2>
+                <div class="flex bg-[#1a1a1a] p-1.5 rounded-xl border border-[#333]">
+                    <button onclick="setWalletTab('deposit')" id="wTab-deposit" class="flex-1 py-3 rounded-lg text-sm transition-all bg-gold text-black font-bold">Deposit</button>
+                    <button onclick="setWalletTab('withdraw')" id="wTab-withdraw" class="flex-1 py-3 rounded-lg text-sm transition-all text-gray-500">Withdraw</button>
+                </div>
+            </div>
+
+            <!-- Deposit -->
+            <div id="view-deposit" class="px-4 py-6">
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-[14px] font-bold text-white tracking-wide">Deposit</p>
+                    <button onclick="switchTab('activity'); setActivityTab('finance');" class="text-[11px] text-gray-400 hover:text-gold transition font-medium">Deposit history <i class="fas fa-angle-right ml-1"></i></button>
+                </div>
+                
+                <div class="flex gap-3 mb-6 overflow-x-auto pb-2" style="scrollbar-width: none;">
+                    <div onclick="selectTopMethod('Nagad')" id="top-m-Nagad" class="min-w-[85px] border border-[#333] rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer bg-[#1a1a1a] transition">
+                        <svg class="w-8 h-8 mb-1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" rx="15" fill="#ED1C24"/><path d="M50 20 A30 30 0 1 1 20 50" fill="none" stroke="#F7931E" stroke-width="12" stroke-linecap="round"/><path d="M50 35 A15 15 0 1 1 35 50" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/><circle cx="50" cy="50" r="5" fill="#F7931E"/></svg>
+                        <span class="text-xs font-bold text-gray-300">Nagad</span>
+                    </div>
+                    <div onclick="selectTopMethod('Bkash')" id="top-m-Bkash" class="min-w-[85px] border border-[#333] rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer top-method-active bg-[#1a1a1a] transition">
+                        <svg class="w-8 h-8 mb-1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" rx="15" fill="#E2136E"/><polygon points="25,35 50,55 25,75" fill="#FFFFFF"/><polygon points="50,55 75,35 100,55 75,75" fill="#FFFFFF"/></svg>
+                        <span class="text-xs font-bold text-gray-300">bKash</span>
+                    </div>
+                </div>
+
+                <div class="bg-dark-card rounded-2xl p-4 border border-[#222] mb-6 shadow-lg">
+                    <p class="text-sm font-bold text-white mb-4 flex items-center gap-2"><i class="fas fa-layer-group text-gold"></i> Select channel</p>
+                    <div class="grid grid-cols-2 gap-3" id="channelGrid"></div>
+                </div>
+
+                <div class="bg-dark-card rounded-2xl p-4 border border-[#222] mb-6 shadow-lg">
+                    <p class="text-sm font-bold text-white mb-4 flex items-center gap-2"><i class="fas fa-coins text-gold"></i> Deposit amount</p>
+                    <div class="grid grid-cols-3 gap-3 mb-4">
+                        <button onclick="setDepAmount(300)" id="amt-btn-300" class="amt-btn py-2.5 bg-[#1a1a1a] rounded border border-[#333] text-sm font-bold text-gray-400 hover:border-gold transition">৳ 300</button>
+                        <button onclick="setDepAmount(500)" id="amt-btn-500" class="amt-btn py-2.5 bg-[#1a1a1a] rounded border border-[#333] text-sm font-bold text-gray-400 hover:border-gold transition amt-btn-active">৳ 500</button>
+                        <button onclick="setDepAmount(1000)" id="amt-btn-1000" class="amt-btn py-2.5 bg-[#1a1a1a] rounded border border-[#333] text-sm font-bold text-gray-400 hover:border-gold transition">%৳ 1K</button>
+                        <button onclick="setDepAmount(2000)" id="amt-btn-2000" class="amt-btn py-2.5 bg-[#1a1a1a] rounded border border-[#333] text-sm font-bold text-gray-400 hover:border-gold transition">৳ 2K</button>
+                        <button onclick="setDepAmount(10000)" id="amt-btn-10000" class="amt-btn py-2.5 bg-[#1a1a1a] rounded border border-[#333] text-sm font-bold text-gray-400 hover:border-gold transition">৳ 10K</button>
+                        <button onclick="setDepAmount(25000)" id="amt-btn-25000" class="amt-btn py-2.5 bg-[#1a1a1a] rounded border border-[#333] text-sm font-bold text-gray-400 hover:border-gold transition">৳ 25K</button>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute left-4 top-3.5 text-gold font-bold">৳</span>
+                        <input type="number" id="newDepAmountInput" value="500" oninput="removeActiveAmtBtn()" placeholder="100.00 - 25,000.00" class="w-full p-3.5 pl-8 rounded-xl bg-[#1a1a1a] border border-[#333] text-white font-bold text-md">
+                        <i class="fas fa-times-circle absolute right-4 top-4 text-gray-600 cursor-pointer" onclick="document.getElementById('newDepAmountInput').value=''; removeActiveAmtBtn();"></i>
+                    </div>
+                </div>
+
+                <div class="bg-[#111] rounded-2xl p-4 border border-[#333] mb-6 shadow-inner">
+                    <p class="text-sm font-bold text-white mb-3 flex items-center gap-2"><i class="fas fa-book-open text-gold"></i> Recharge instructions</p>
+                    <ul class="instruction-list">
+                        <li>If the transfer time is up, please fill out the deposit form again.</li>
+                        <li>The transfer amount must match the order you created, otherwise the sand money cannot be credited successfully.</li>
+                        <li>If you transfer the wrong amount, our company will not be responsible for the lost amount!</li>
+                        <li>Note: do not cancel the deposit order after the money has been transferred.</li>
+                    </ul>
+                </div>
+
+                <div class="flex justify-between items-center mb-6 mt-4">
+                    <div>
+                        <span class="text-[10px] text-gray-500 block mb-1">Recharge Method:</span>
+                        <span id="bottomMethodDisplay" class="font-bold text-white text-sm">CashPay-bKash</span>
+                    </div>
+                    <button onclick="initiateDeposit()" class="bg-[#e2e8f0] text-gray-800 font-bold py-3 px-10 rounded-md shadow-md hover:bg-gold hover:text-black transition">Deposit</button>
+                </div>
+            </div>
+
+            <!-- Withdraw -->
+            <div id="view-withdraw" class="hidden-el px-4 py-6">
+                <div class="flex justify-between items-center mb-3"><p class="text-xs font-bold text-gray-500 uppercase">Withdraw Info</p><button onclick="showHistoryModal('Withdraw')" class="text-xs text-gold font-bold flex items-center gap-1"><i class="fas fa-history"></i> History</button></div>
+                <div onclick="checkAndShowBindWallet()" class="bg-dark-card p-4 rounded-xl flex justify-between items-center mb-6 cursor-pointer hover:border-gold transition border border-[#222]">
+                    <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-[#1a1a1a] flex items-center justify-center text-gold text-xl border border-[#333]"><i class="fas fa-credit-card"></i></div><div><div class="text-sm font-bold text-white" id="boundWalletType">Select Wallet</div><div class="text-[10px] text-gray-500 font-mono" id="boundWalletNum">Tap to bind</div></div></div><i class="fas fa-chevron-right text-gray-600"></i>
+                </div>
+                
+                <div class="bg-[#1a1a1a] p-4 rounded-xl border border-dashed border-[#444] mb-4">
+                    <div class="flex justify-between text-xs mb-2">
+                        <span class="text-gray-400 font-bold uppercase">Wager Requirement</span>
+                        <div id="turnoverStatusText" class="text-xs font-bold text-gray-500">Checking...</div>
+                    </div>
+                    <div class="w-full bg-black h-2.5 rounded-full overflow-hidden border border-[#333]">
+                        <div id="turnoverProgressBar" class="h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between mt-2 text-[10px] text-gray-500">
+                        <span>Wager Needed: <span id="wagerNeededDisplay" class="text-white font-bold">৳ </span></span>
+                    </div>
+                </div>
+
+                <div class="relative mb-3"><span class="absolute left-4 top-4 text-gray-500 font-bold">৳ </span><input type="number" id="newWithAmountInput" placeholder="Withdraw Amount" class="w-full p-4 pl-8 rounded-xl bg-[#1a1a1a] border border-[#333] text-white font-bold text-lg"></div>
+                <input type="password" id="newWithPassInput" placeholder="Login Password" class="w-full p-4 rounded-xl bg-[#1a1a1a] border border-[#333] text-white font-bold mb-6">
+                <button onclick="initiateWithdraw()" class="w-full bg-[#222] border border-gold text-gold py-4 rounded-xl font-bold shadow-lg hover:bg-[#333] transition">WITHDRAW</button>
+            </div>
+        </div>
+
+        <!-- ACCOUNT -->
+        <div id="page-account" class="page-sec hidden-el px-4 pt-8">
+            <div class="flex items-center gap-4 mb-8">
+                <div class="w-16 h-16 rounded-full bg-[#1a1a1a] border border-gold flex items-center justify-center text-3xl text-gold shadow-[0_0_15px_rgba(212,175,55,0.2)]"><i class="fas fa-user-astronaut"></i></div>
+                <div><h2 class="text-xl font-black text-white" id="profilePhone">...</h2><div class="bg-[#111] px-3 py-1 rounded border border-[#333] inline-block mt-1"><span class="text-[10px] text-gray-400 font-bold">UID: <span id="profileUID" class="text-white font-mono">...</span> <i class="fas fa-copy ml-1 cursor-pointer hover:text-gold" onclick="navigator.clipboard.writeText(document.getElementById('profileUID').innerText)"></i></span></div></div>
+            </div>
+            <div class="space-y-3">
+                <div onclick="openGiftModal()" class="bg-dark-card p-4 rounded-xl flex justify-between items-center cursor-pointer hover:border-gold transition"><div class="flex items-center gap-4"><div class="w-8 h-8 rounded bg-purple-900/30 text-purple-500 flex items-center justify-center"><i class="fas fa-gift"></i></div><span class="font-bold text-sm text-gray-300">Redeem Code</span></div><i class="fas fa-chevron-right text-gray-600 text-xs"></i></div>
+                <div onclick="checkAndShowBindWallet()" class="bg-dark-card p-4 rounded-xl flex justify-between items-center cursor-pointer hover:border-gold transition"><div class="flex items-center gap-4"><div class="w-8 h-8 rounded bg-blue-900/30 text-blue-500 flex items-center justify-center"><i class="fas fa-university"></i></div><span class="font-bold text-sm text-gray-300">Bank Card</span></div><i class="fas fa-chevron-right text-gray-600 text-xs"></i></div>
+                <div onclick="switchTab('activity'); setActivityTab('finance');" class="bg-dark-card p-4 rounded-xl flex justify-between items-center cursor-pointer hover:border-gold transition"><div class="flex items-center gap-4"><div class="w-8 h-8 rounded bg-green-900/30 text-green-500 flex items-center justify-center"><i class="fas fa-file-invoice-dollar"></i></div><span class="font-bold text-sm text-gray-300">Transaction History</span></div><i class="fas fa-chevron-right text-gray-600 text-xs"></i></div>
+                <div onclick="window.open('https://t.me/Aaxun_V', '_blank')" class="bg-dark-card p-4 rounded-xl flex justify-between items-center cursor-pointer hover:border-gold transition"><div class="flex items-center gap-4"><div class="w-8 h-8 rounded bg-orange-900/30 text-orange-500 flex items-center justify-center"><i class="fas fa-headset"></i></div><span class="font-bold text-sm text-gray-300">Support</span></div><i class="fas fa-chevron-right text-gray-600 text-xs"></i></div>
+            </div>
+            <button onclick="logout()" class="w-full mt-8 border border-red-900 text-red-500 py-3 rounded-xl font-bold text-sm hover:bg-red-900/20 transition">LOG OUT</button>
+        </div>
+
+        <!-- NAV -->
+        <nav class="fixed bottom-0 w-full max-w-[480px] bg-[#050505] border-t border-[#222] h-16 flex justify-around items-center z-50">
+            <button onclick="switchTab('home')" class="flex flex-col items-center gap-1 text-gray-600 nav-btn nav-active" id="nav-home"><i class="fas fa-home text-lg"></i><span class="text-[9px] font-bold">Home</span></button>
+            <button onclick="switchTab('activity')" class="flex flex-col items-center gap-1 text-gray-600 nav-btn" id="nav-activity"><i class="fas fa-history text-lg"></i><span class="text-[9px] font-bold">Activity</span></button>
+            <button onclick="switchTab('promotion')" class="relative -top-5"><div class="w-12 h-12 rounded-full bd99-gradient flex items-center justify-center border-[3px] border-[#050505] text-black shadow-lg shadow-gold/30 transform active:scale-95 transition"><i class="fas fa-gem text-lg"></i></div></button>
+            <button onclick="switchTab('wallet')" class="flex flex-col items-center gap-1 text-gray-600 nav-btn" id="nav-wallet"><i class="fas fa-wallet text-lg"></i><span class="text-[9px] font-bold">Wallet</span></button>
+            <button onclick="switchTab('account')" class="flex flex-col items-center gap-1 text-gray-600 nav-btn" id="nav-account"><i class="fas fa-user text-lg"></i><span class="text-[9px] font-bold">Account</span></button>
+        </nav>
+    </div>
+
+    <!-- GAME PAGE -->
+    <div id="gamePage" class="hidden-el fixed inset-0 bg-[#000] z-[100] overflow-y-auto max-w-[480px] mx-auto pb-10">
+        <div class="bg-[#111] p-3 flex justify-between items-center border-b border-[#222] sticky top-0 z-30">
+            <div class="flex items-center gap-3"><i onclick="closeGame()" class="fas fa-chevron-left text-white p-2 cursor-pointer hover:text-gold"></i><h2 class="font-black text-white italic">WIN GO</h2></div>
+            <div class="bg-[#1a1a1a] border border-[#333] px-4 py-1.5 rounded-full text-gold font-bold text-sm shadow-inner">৳ <span class="userBalance">0.00</span></div>
+        </div>
+        <div class="p-4">
+            <div class="bg-gradient-to-r from-[#1a1a1a] to-[#222] border border-[#333] rounded-xl p-4 flex justify-between items-center shadow-lg relative overflow-hidden mb-6">
+                <div class="absolute right-0 top-0 w-24 h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                <div><div class="flex items-center gap-2 mb-1"><i class="far fa-clock text-gold animate-spin-slow"></i><span class="text-xs text-gray-400 font-bold uppercase tracking-widest">Period: 30s</span></div><p id="periodId" class="text-xl font-mono font-black text-white tracking-widest">...</p></div>
+                <div><p class="text-[10px] text-gray-500 font-bold text-right mb-1 uppercase">Time Left</p><div class="flex gap-1 text-3xl font-black text-white"><span class="bg-[#000] w-8 h-10 rounded flex items-center justify-center border border-[#333]" id="t-sec-1">0</span><span class="bg-[#000] w-8 h-10 rounded flex items-center justify-center border border-[#333]" id="t-sec-2">0</span></div></div>
+            </div>
+            <div class="bg-dark-card rounded-xl p-4 mb-6 relative">
+                <div id="betOverlay" class="hidden-el absolute inset-0 bg-black/70 z-20 flex items-center justify-center rounded-xl"><span class="text-3xl font-black text-white">LOCKED</span></div>
+                <div class="flex gap-3 mb-6">
+                    <button onclick="selectBet('Green')" class="flex-1 bg-[#22c55e] py-3 rounded-lg font-bold shadow-[0_4px_0_#15803d] active:translate-y-1 active:shadow-none text-white tracking-wide">Green</button>
+                    <button onclick="selectBet('Violet')" class="flex-1 bg-[#a855f7] py-3 rounded-lg font-bold shadow-[0_4px_0_#7e22ce] active:translate-y-1 active:shadow-none text-white tracking-wide">Violet</button>
+                    <button onclick="selectBet('Red')" class="flex-1 bg-[#ef4444] py-3 rounded-lg font-bold shadow-[0_4px_0_#b91c1c] active:translate-y-1 active:shadow-none text-white tracking-wide">Red</button>
+                </div>
+                <div class="grid grid-cols-5 gap-3 mb-6">
+                    <button onclick="selectBet(0)" class="ball bg-0">0</button><button onclick="selectBet(1)" class="ball bg-g">1</button><button onclick="selectBet(2)" class="ball bg-r">2</button><button onclick="selectBet(3)" class="ball bg-g">3</button><button onclick="selectBet(4)" class="ball bg-r">4</button>
+                    <button onclick="selectBet(5)" class="ball bg-5">5</button><button onclick="selectBet(6)" class="ball bg-r">6</button><button onclick="selectBet(7)" class="ball bg-g">7</button><button onclick="selectBet(8)" class="ball bg-r">8</button><button onclick="selectBet(9)" class="ball bg-g">9</button>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="selectBet('Big')" class="flex-1 bg-[#fbbf24] text-black py-3 rounded-full font-black uppercase shadow-[0_4px_0_#d97706] active:translate-y-1 active:shadow-none tracking-widest text-sm">Big</button>
+                    <button onclick="selectBet('Small')" class="flex-1 bg-[#60a5fa] text-black py-3 rounded-full font-black uppercase shadow-[0_4px_0_#2563eb] active:translate-y-1 active:shadow-none tracking-widest text-sm">Small</button>
+                </div>
+            </div>
+            <div>
+                <div class="flex gap-6 mb-4 border-b border-[#222] pb-1"><button onclick="toggleGameTab('global')" id="tabGlobal" class="text-gold font-bold text-sm border-b-2 border-gold pb-2 uppercase tracking-wide">Game History</button><button onclick="toggleGameTab('personal')" id="tabPersonal" class="text-gray-500 font-bold text-sm pb-2 uppercase tracking-wide">My Bets</button></div>
+                <div class="bg-dark-card rounded-t-lg p-3 flex justify-between text-[10px] text-gray-400 font-bold uppercase tracking-wider border-b border-[#222]"><div class="w-1/3">Period</div><div class="w-1/3 text-center">Number</div><div class="w-1/3 text-right">Result</div></div>
+                <div id="globalHistory" class="bg-[#111] border border-[#222] rounded-b-lg"></div><div id="personalHistory" class="bg-[#111] border border-[#222] rounded-b-lg hidden-el"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="betConfirmModal" class="hidden-el fixed inset-0 z-[1000] bg-black/80 flex items-end"><div class="bg-[#121212] w-full rounded-t-3xl p-6 border-t border-[#333]"><div class="text-center mb-6"><p class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">You Selected</p><h2 id="selectedType" class="text-4xl font-black text-white uppercase drop-shadow-md">Red</h2></div><div class="bg-[#000] p-4 rounded-xl flex justify-between items-center mb-6 border border-[#222]"><span class="text-xs font-bold text-gray-400 uppercase">Your Balance</span><span class="text-gold font-bold text-lg">৳ <span class="userBalance">0.00</span></span></div><div class="flex items-center justify-between mb-8"><span class="text-sm text-gray-300 font-bold uppercase">Bet Amount</span><div class="flex items-center gap-4"><button onclick="adjustBet(-1)" class="w-10 h-10 bg-[#222] text-white rounded-full font-bold border border-[#333] hover:border-white transition">-</button><input type="number" id="finalAmount" value="1" class="w-24 text-center bg-transparent border-b-2 border-gold font-black text-2xl text-white outline-none"><button onclick="adjustBet(1)" class="w-10 h-10 bg-gold text-black rounded-full font-bold hover:bg-white transition">+</button></div></div><div class="flex gap-4"><button onclick="hideModal('betConfirmModal')" class="flex-1 py-4 bg-[#222] rounded-xl font-bold text-gray-400 hover:text-white transition">Cancel</button><button onclick="confirmBet()" class="flex-1 py-4 bd99-gradient text-black rounded-xl font-black shadow-lg">CONFIRM</button></div></div></div>
+    
+    <div id="resultPopup" class="hidden-el fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-6 backdrop-blur-sm"><div class="result-popup w-full max-w-[320px] relative"><div id="confettiContainer"></div><div id="resCard" class="bg-[#1a1a1a] rounded-3xl overflow-hidden border border-[#333] shadow-2xl relative z-10"><div id="resHeader" class="h-40 flex items-center justify-center flex-col relative overflow-hidden"><div class="absolute inset-0 opacity-20 bg-cover bg-center" style="background-image: url('https://www.transparenttextures.com/patterns/stardust.png');"></div><h2 id="resTitle" class="text-6xl font-black italic tracking-tighter drop-shadow-lg z-10 relative">WIN</h2><div id="resIcon" class="text-4xl mt-2 z-10">৳Loss</div></div><div class="p-8 text-center bg-[#111]"><p id="resMsg" class="text-gray-400 font-bold text-xs uppercase tracking-widest mb-2">Profit Added</p><h3 id="resAmount" class="text-5xl font-black mb-8 tracking-tighter text-white">৳Win 30.00</h3><button onclick="closeResultPopup()" class="w-full bg-white text-black py-4 rounded-xl font-black uppercase tracking-[0.2em] shadow-lg hover:scale-105 transition transform active:scale-95">CONTINUE</button></div></div></div></div>
+
+    <div id="bindWalletModal" class="hidden-el fixed inset-0 bg-black/90 flex items-center justify-center z-[2000] p-6"><div class="bg-dark-card w-full max-w-[400px] p-6 rounded-2xl border border-[#333]"><h3 class="text-white font-black text-xl mb-6 text-center uppercase">Bind Wallet</h3><div class="flex gap-4 mb-6"><div onclick="setBindType('Bkash')" id="bind-Bkash" class="flex-1 bg-[#1a1a1a] border border-[#333] p-4 rounded-xl flex flex-col items-center cursor-pointer hover:border-gold transition">
+        <svg class="w-10 h-10 mb-2" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" rx="15" fill="#E2136E"/><polygon points="25,35 50,55 25,75" fill="#FFFFFF"/><polygon points="50,55 75,35 100,55 75,75" fill="#FFFFFF"/></svg>
+        <span class="text-xs font-bold mt-1">bKash</span></div><div onclick="setBindType('Nagad')" id="bind-Nagad" class="flex-1 bg-[#1a1a1a] border border-[#333] p-4 rounded-xl flex flex-col items-center cursor-pointer hover:border-gold transition">
+        <svg class="w-10 h-10 mb-2" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" rx="15" fill="#ED1C24"/><path d="M50 20 A30 30 0 1 1 20 50" fill="none" stroke="#F7931E" stroke-width="12" stroke-linecap="round"/><path d="M50 35 A15 15 0 1 1 35 50" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/><circle cx="50" cy="50" r="5" fill="#F7931E"/></svg>
+        <span class="text-xs font-bold mt-1">Nagad</span></div></div><input type="hidden" id="walletType" value=""><label class="text-xs text-gray-500 font-bold uppercase pl-1">Wallet Number</label><input type="number" id="walletNum" class="w-full p-4 mt-2 bg-[#000] border border-[#333] text-white rounded-xl mb-6 font-bold" placeholder="017xxxxxxxx"><div class="flex gap-3"><button onclick="hideModal('bindWalletModal')" class="flex-1 py-3 bg-[#222] text-gray-400 rounded-xl font-bold">Cancel</button><button onclick="saveWallet()" class="flex-1 py-3 bg-gold text-black rounded-xl font-bold">Save</button></div></div></div>
+
+    <!-- FULL SCREEN GTPAY GATEWAY -->
+    <div id="gatewayModal" class="hidden-el gateway-full">
+        <div class="gtpay-header flex justify-between items-center shadow-md relative z-10">
+            <div>
+                <i onclick="hideModal('gatewayModal')" class="fas fa-times absolute top-[28px] right-5 text-white text-2xl cursor-pointer active:scale-90 transition"></i>
+                <h2 class="text-[26px] font-bold tracking-wide">BDT <span id="gtAmount">0</span></h2>
+                <p class="text-[12px] font-semibold mt-1 text-green-100"></p>
+            </div>
+            <div class="text-right mr-10 mt-2">
+                <span class="bg-white text-[#0b6b3a] px-3 py-1.5 rounded font-black text-sm">PAY</span> <span class="tracking-widest text-[11px] font-bold ml-1">SERVICE</span>
+            </div>
+        </div>
+
+        <div class="p-5 text-gray-800 flex-1 bg-white">
+            <p class="text-[#e11d48] font-bold text-[16px] leading-relaxed mb-5 mt-2">
+               1.Copy The Number Above.
+               
+               2.Go The Nagot And Bkash App.
+               
+               3.Select Send Money.
+               
+               4.Enter Amount(BDT <span id="gtAmountWarning">0</span>), 5.Copey The Translation ID and Paste Below?
+            </p>
+            <div id="gtMethodBox" class="rounded-lg p-3.5 flex items-center gap-4 text-white font-bold text-[19px] mb-5 shadow" style="background-color: #df146e;">
+                <div class="bg-white rounded-full w-14 h-14 flex items-center justify-center shadow overflow-hidden" id="gtMethodLogoBox"></div>
+                <span id="gtMethodName" class="tracking-wide">BKASH Deposit</span>
+            </div>
+            <div class="mb-6">
+                <label class="font-bold text-black text-[16px]">Wallet No<span class="text-purple-600 ml-1">*</span></label>
+                <p class="text-[14px] text-gray-700 mt-1.5 mb-3 font-semibold"><span id="gtMethodText">BKASH</span> <span class="text-[#0b6b3a]"></span> </p>
+                <div class="bg-[#f3f4f6] rounded-md border border-gray-300 p-4 flex justify-between items-center shadow-inner">
+                    <span id="adminPhone" class="text-xl text-black tracking-widest font-mono font-bold">...</span>
+                    <i onclick="copyAdminPhone()" class="far fa-copy text-[#0b6b3a] text-3xl cursor-pointer active:scale-90 transition"></i>
+                </div>
+            </div>
+            <div class="mb-8 mt-2">
+                <label class="font-bold text-black text-[16px] block mb-3">রিচার্জ সম্পূর্ণ করতে অনুগ্রহ করে লেনদেন আইডি লিখুন<span class="text-[#e11d48]"></span></label>
+                <input type="text" id="depTrx" class="gt-input focus:outline-none" placeholder="TrxID !">
+            </div>
+            <button onclick="submitGateway()" class="w-full border-2 border-gray-300 text-black py-4 rounded-md font-bold text-[18px] shadow hover:bg-gray-50 active:bg-gray-200 transition mb-8 bg-white tracking-wide">✍️DEPOSIT✅</button>
+            <div class="mt-4">
+                <p class="font-bold text-black text-[15px] mb-1"></p>
+                <p class="text-[#e11d48] text-[12px] font-bold mb-2">ব্যাখ্যা：
+১.
+ওয়ালেট জমা ব্যবহারকারীদের জন্য নির্দেশিকা
+নির্দেশিকা ম্যাচিং প্রক্রিয়া সম্পন্ন হওয়ার পর এবং নির্ধারিত নিয়ন্ত্রিত ওয়ালেট অ্যাকাউন্ট প্রাপ্তির পর বিনিয়োগকারীদের অবশ্যই তাদের ব্যক্তিগত ওয়ালেট অ্যাকাউন্ট ব্যবহার করে অর্থ প্রেরণ করতে হবে এবং সেই অর্থ নির্দিষ্ট করা নিয়ন্ত্রিত ওয়ালেট অ্যাকাউন্টে জমা দিতে হবে।
+
+২.
+অর্থ প্রেরণ ও জমা নিশ্চিতকরণ প্রক্রিয়া
+অর্থ প্রেরণ সম্পন্ন হওয়ার পর অবিলম্বে লেনদেন নম্বর জমা দিতে হবে, যাতে সিস্টেম তাৎক্ষণিকভাবে যাচাই করে জমা নিশ্চিত করতে পারে।!</p>
+                <p class="text-gray-500 text-[11.5px] leading-relaxed font-medium"><span id="gtMethodFooter"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORY MODAL -->
+    <div id="historyModal" class="hidden-el fixed inset-0 bg-[#f3f4f6] z-[2000] overflow-y-auto">
+        <div class="bg-white p-4 sticky top-0 z-10 shadow-sm flex items-center justify-between">
+            <i onclick="hideModal('historyModal')" class="fas fa-angle-left text-gray-800 text-2xl cursor-pointer"></i>
+            <h2 id="historyModalTitle" class="text-lg font-bold text-gray-800 absolute left-1/2 -translate-x-1/2">Deposit history</h2>
+            <div class="w-6"></div>
+        </div>
+        <div class="bg-white px-4 py-3 flex gap-2 border-b border-gray-200">
+            <div class="bg-yellow-400 text-white px-4 py-1.5 rounded text-sm font-bold shadow-sm flex items-center gap-1"><i class="fas fa-th-large text-xs"></i> All</div>
+        </div>
+        <div id="historyListContent" class="p-4"></div>
+    </div>
+
+</div>
+
+<script>
+    const firebaseConfig = {
+  apiKey: "AIzaSyCNEO5Q8gdaf_hEX0VpYqD7XOC0JK_EKOI",
+  authDomain: "fir-baa26.firebaseapp.com",
+  databaseURL: "https://fir-baa26-default-rtdb.firebaseio.com",
+  projectId: "fir-baa26",
+  storageBucket: "fir-baa26.firebasestorage.app",
+  messagingSenderId: "261374716342",
+  appId: "1:261374716342:web:206ae86040abced4b9f917",
+  measurementId: "G-SQB1DSV1BC"
+};
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    let user = null; let authMode = 'login'; let currentLivePeriod = 0; let gameTimerInterval = null; let historyData = []; 
+    let allUsersDataCache = {}; 
+    let liveWinnerInterval = null;
+    let currentPromoDateTab = 'today'; // NEW: Track selected promo date
+    
+    // DEPOSIT VARIABLES
+    let selectedTopMethod = 'Bkash'; let selectedChannel = 'CashPay-bKash'; let depositNumbers = null; 
+    const channelData = { 'Bkash': [{ name: 'CashPay-bKash', limit: '100 - 25K' }, { name: 'GoPay-bKash', limit: '100 - 25K' }, { name: 'RolezPay-bKash', limit: '100 - 30K' }, { name: 'Lucky-bKash', limit: '100 - 25K' }, { name: 'StarPago-bKash', limit: '100 - 30K' }, { name: 'OpPay-bKash', limit: '100 - 25K' }], 'Nagad': [{ name: 'CashPay-Nagad', limit: '100 - 25K' }, { name: 'GoPay-Nagad', limit: '100 - 25K' }, { name: 'RolezPay-Nagad', limit: '100 - 30K' }, { name: 'Lucky-Nagad', limit: '100 - 25K' }, { name: 'StarPago-Nagad', limit: '100 - 30K' }, { name: 'OpPay-Nagad', limit: '100 - 25K' }] };
+
+    let currentWalletTab = 'deposit'; let adminForcedResult = null; let serverOffset = 0;
+    const csBtn = document.getElementById('csFloatBtn'); let isDragging = false; let startX, startY, initialLeft, initialTop;
+    csBtn.addEventListener('touchstart', (e) => { isDragging = true; const touch = e.touches[0]; startX = touch.clientX; startY = touch.clientY; const rect = csBtn.getBoundingClientRect(); initialLeft = rect.left; initialTop = rect.top; csBtn.style.transition = 'none'; });
+    csBtn.addEventListener('touchmove', (e) => { if (!isDragging) return; e.preventDefault(); const touch = e.touches[0]; const deltaX = touch.clientX - startX; const deltaY = touch.clientY - startY; csBtn.style.left = `${initialLeft + deltaX}px`; csBtn.style.top = `${initialTop + deltaY}px`; csBtn.style.right = 'auto'; csBtn.style.bottom = 'auto'; });
+    csBtn.addEventListener('touchend', () => { isDragging = false; csBtn.style.transition = 'all 0.3s ease'; });
+    database.ref('.info/serverTimeOffset').on('value', s => serverOffset = s.val() || 0);
+
+    // --- UTILITY FOR DATES ---
+    function getStandardDateStr(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`; // Format: YYYY-MM-DD
+    }
+
+    window.onload = () => {
+        const saved = localStorage.getItem('bd99_user');
+        if(saved) {
+            database.ref('users/'+saved).once('value', s => {
+                if(s.exists()) {
+                    user = s.val();
+                    if(!user.betHistory) user.betHistory = [];
+                    if(!user.transactions) user.transactions = [];
+                    if(!user.giftHistory) user.giftHistory = [];
+                    if(user.wager_left === undefined) user.wager_left = 0;
+                    document.getElementById('authPage').classList.add('hidden-el');
+                    document.getElementById('mainContent').classList.remove('hidden-el');
+                    setupListeners(saved); initTimer(); fetchHistory(); 
+                    renderDailyLeaderboard(); startLiveWinners();
+                    updateChannelList('Bkash'); 
+                }
+            });
+        }
+        database.ref('admin_control/forcedResult').on('value', s => adminForcedResult = s.val());
+        database.ref('admin_control/payment_numbers').on('value', s => { 
+            if(s.exists()) { depositNumbers = s.val(); if(!document.getElementById('gatewayModal').classList.contains('hidden-el')) { document.getElementById('adminPhone').innerText = getLiveNumber(selectedTopMethod); } } 
+        });
+        
+        // Set default filter date for Subordinate page to Today
+        document.getElementById('subDateFilter').value = getStandardDateStr(new Date());
+    };
+
+    function addLiveWinner() {
+        const container = document.getElementById('liveWinningFeed');
+        if(!container) return;
+        const name = 'Mem***' + Math.floor(Math.random()*900+100);
+        const amt = (Math.random() * 5000 + 50).toFixed(2);
+        const avatar = `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70) + 1}`;
+        
+        const el = document.createElement('div');
+        el.className = 'win-item-anim bg-gradient-to-r from-[#1a1a1a] to-[#2a220a] border border-[#d4af37]/30 rounded-xl p-3 flex items-center justify-between shadow-md';
+        el.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <img src="${avatar}" class="w-10 h-10 rounded-full border border-gold object-cover">
+                    <span class="absolute -bottom-1 -right-1 bg-gold text-black text-[8px] font-black px-1 rounded-sm z-10">V1</span>
+                </div>
+                <div class="text-[13px] font-bold text-gray-200">${name}</div>
+            </div>
+            <div class="flex flex-col items-center bg-[#0a0a0a] border border-[#333] px-2 py-1 rounded-md shadow-inner">
+                <div class="flex gap-1 text-[10px]">CONGRATULATIONS CAPTAIN</div>
+                <span class="text-[7px] font-black text-gray-400 mt-0.5 tracking-wider">WINGO</span>
+            </div>
+            <div class="text-right">
+                <div class="text-gold font-black text-[15px]">৳ ${amt}</div>
+                <div class="text-[8px] text-gray-400 uppercase tracking-wider">Winning amount</div>
+            </div>
+        `;
+        
+        container.prepend(el);
+        if(container.children.length > 4) { container.removeChild(container.lastChild); }
+    }
+
+    function startLiveWinners() {
+        if(liveWinnerInterval) clearInterval(liveWinnerInterval);
+        for(let i=0; i<4; i++) addLiveWinner(); 
+        liveWinnerInterval = setInterval(addLiveWinner, 3500);
+    }
+
+    function renderDailyLeaderboard() {
+        const container = document.getElementById('dailyLeaderboardList');
+        if(!container) return;
+        const dateSeed = new Date().getDate(); 
+        let html = '';
+        const baseAmounts = [607600, 483963, 481214, 392000, 358727, 327579, 292040, 263420];
+        
+        for(let i=0; i<8; i++) {
+            let name = 'Mem***' + Math.floor(Math.random()*900+100);
+            let amt = (baseAmounts[i] + (dateSeed * 1000) + Math.floor(Math.random()*1000)).toFixed(2);
+            let avatar = `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70) + 1}`;
+            
+            let rankIcon = '';
+            if(i === 0) rankIcon = '<i class="fas fa-medal text-yellow-400 text-lg shadow-sm"></i><span class="text-yellow-400 font-black text-xs ml-1">NO1</span>';
+            else if(i === 1) rankIcon = '<i class="fas fa-medal text-gray-300 text-lg shadow-sm"></i><span class="text-gray-300 font-black text-xs ml-1">NO2</span>';
+            else if(i === 2) rankIcon = '<i class="fas fa-medal text-amber-600 text-lg shadow-sm"></i><span class="text-amber-600 font-black text-xs ml-1">NO3</span>';
+            else rankIcon = `<span class="text-gray-500 font-black text-sm ml-2">NO${i+1}</span>`;
+            
+            html += `
+                <div class="flex justify-between items-center py-2.5 border-b border-[#222] last:border-0 hover:bg-[#1a1a1a] transition px-2 rounded-lg cursor-default">
+                    <div class="flex items-center gap-3.5">
+                        <img src="${avatar}" class="w-11 h-11 rounded-full border border-[#333] object-cover shadow-sm">
+                        <div>
+                            <div class="text-[13px] font-bold text-gray-200">${name}</div>
+                            <div class="flex items-center mt-0.5 tracking-wider">${rankIcon}</div>
+                        </div>
+                    </div>
+                    <div class="text-white font-mono font-bold text-[15px]">৳ ${amt}</div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+    }
+
+    function checkCommissionTransfer() {
+        if(!user || !user.referrals) return;
+        if (parseFloat(user.referrals.commission) > 0) {
+            // Updated: Transferred directly upon detection without day-filter 
+            // so Admin commission always applies instantly.
+            const comm = parseFloat(user.referrals.commission);
+            user.balance = (parseFloat(user.balance) || 0) + comm;
+            user.referrals.commission = 0;
+            if(!user.transactions) user.transactions = [];
+            let txArr = Array.isArray(user.transactions) ? user.transactions : Object.values(user.transactions);
+            txArr.unshift({ type: 'Commission Bonus', amount: comm, method: 'System', status: 'Complete', date: new Date().toLocaleString(), timestamp: Date.now(), orderNum: 'COM' + Date.now() });
+            user.transactions = txArr;
+            database.ref('users/'+user.phone).set(user);
+        }
+    }
+
+    function toggleAuth(t) {
+        authMode = t; const isLogin = t === 'login';
+        document.getElementById('loginTab').className = isLogin ? 'flex-1 pb-3 text-gold font-bold border-b-2 border-gold' : 'flex-1 pb-3 text-gray-500';
+        document.getElementById('regTab').className = !isLogin ? 'flex-1 pb-3 text-gold font-bold border-b-2 border-gold' : 'flex-1 pb-3 text-gray-500';
+        document.getElementById('confirmPassBox').classList.toggle('hidden-el', isLogin); document.getElementById('inviteCodeBox').classList.toggle('hidden-el', isLogin);
+        document.getElementById('authBtn').innerText = isLogin ? 'LOG IN' : 'REGISTER';
+    }
+
+    function handleAuth() {
+        const p = document.getElementById('authPhone').value; const pass = document.getElementById('authPass').value; if(!p || !pass) return alert("Fill fields");
+        if(authMode === 'login') {
+            database.ref('users/'+p).once('value', s => { if(s.exists() && s.val().pass === pass) { user = s.val(); localStorage.setItem('bd99_user', p); location.reload(); } else alert("Invalid Credentials"); });
+        } else {
+            const cPass = document.getElementById('authConfirmPass').value; const ref = document.getElementById('authInviteCode').value; if(pass !== cPass) return alert("Passwords mismatch");
+            database.ref('users/'+p).once('value', s => {
+                if(s.exists()) return alert("Exists");
+                const uid = Math.floor(100000 + Math.random() * 900000);
+                // NEW: Added joinDate to explicitly track daily registrations
+                const newUser = { phone: p, pass: pass, uid: uid, balance: 0, wager_left: 0, referrer: ref || null, joinDate: getStandardDateStr(new Date()), last_commission_date: new Date().toLocaleDateString('en-GB'), referrals: { count: 0, depSum: 0, betSum: 0, commission: 0 }, giftHistory: [], betHistory: [], transactions: [] };
+                if(ref) { database.ref('users').orderByChild('uid').equalTo(parseInt(ref)).once('value', rs => { if(rs.exists()) { rs.forEach(c => { let rKey = c.key; let cnt = c.val().referrals.count || 0; database.ref(`users/${rKey}/referrals/count`).set(cnt + 1); }); } }); }
+                database.ref('users/'+p).set(newUser).then(() => { alert("Registered! Login now."); toggleAuth('login'); });
+            });
+        }
+    }
+
+    function setupListeners(phone) {
+        database.ref('users/'+phone).on('value', s => {
+            if(s.exists()) {
+                user = s.val();
+                if(!user.betHistory) user.betHistory = [];
+                if(!user.transactions) user.transactions = [];
+                if(!user.giftHistory) user.giftHistory = [];
+                if(user.wager_left === undefined) user.wager_left = 0;
+                
+                let updates = {};
+                let needsUpdate = false;
+                let txArr = Array.isArray(user.transactions) ? user.transactions : Object.values(user.transactions);
+                txArr.forEach((t, idx) => {
+                    let st = String(t.status).toLowerCase();
+                    if(t.type === 'Deposit' && (st === 'accepted' || st === 'complete' || st === 'success') && !t.wagerAdded) {
+                        user.wager_left = (parseFloat(user.wager_left) || 0) + parseFloat(t.amount);
+                        t.wagerAdded = true;
+                        updates[`users/${user.phone}/wager_left`] = user.wager_left;
+                        updates[`users/${user.phone}/transactions/${idx}/wagerAdded`] = true;
+                        needsUpdate = true;
+                    }
+                });
+                if(needsUpdate) {
+                    database.ref().update(updates);
+                }
+
+                checkCommissionTransfer();
+                updateUI();
+            }
+        });
+    }
+
+    function updateUI() {
+        document.querySelectorAll('.userBalance').forEach(e => e.innerText = parseFloat(user.balance || 0).toFixed(2));
+        document.getElementById('profilePhone').innerText = user.phone; document.getElementById('profileUID').innerText = user.uid; 
+        
+        let refLink = window.location.origin + window.location.pathname + "?ref=" + user.uid;
+        document.getElementById('myInviteCodeText').innerText = refLink;
+        document.getElementById('referralLink').value = refLink;
+        
+        if(user.wallet) { document.getElementById('boundWalletType').innerText = user.wallet.type; document.getElementById('boundWalletNum').innerText = user.wallet.num; }
+        
+        let left = parseFloat(user.wager_left || 0);
+        document.getElementById('wagerNeededDisplay').innerText = "৳ " + left.toFixed(2);
+        if (left <= 0) { document.getElementById('turnoverStatusText').innerHTML = "<span class='text-green-500'>Complete</span>"; document.getElementById('turnoverProgressBar').style.width = "100%"; document.getElementById('turnoverProgressBar').className = "h-full bg-green-600 transition-all duration-500"; } 
+        else { document.getElementById('turnoverStatusText').innerHTML = `<span class='text-red-500'>Pending</span>`; document.getElementById('turnoverProgressBar').style.width = "50%"; document.getElementById('turnoverProgressBar').className = "h-full bg-red-600 transition-all duration-500"; }
+
+        renderMyHistory(); renderGiftHistory(); renderActivity();
+    }
+
+    function switchTab(t) {
+        document.querySelectorAll('.page-sec').forEach(e => e.classList.add('hidden-el')); if(document.getElementById('page-'+t)) document.getElementById('page-'+t).classList.remove('hidden-el');
+        document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('nav-active'); b.classList.replace('text-gold', 'text-gray-600'); });
+        const active = document.getElementById('nav-'+t); if(active) { active.classList.add('nav-active'); active.classList.replace('text-gray-600', 'text-gold'); }
+        if(t === 'wallet') setWalletTab('deposit'); if(t === 'activity') setActivityTab('bets');
+        
+        // NEW: Fetch all data automatically when Promotion tab is clicked to render daily stats
+        if(t === 'promotion') {
+            fetchPromoData();
+        }
+    }
+
+    // ==============================================================
+    // NEW: DYNAMIC PROMOTION & SUBORDINATE TRACKING LOGIC
+    // ==============================================================
+    
+    function fetchPromoData() {
+        database.ref('users').once('value', snap => {
+            if(snap.exists()) {
+                allUsersDataCache = snap.val();
+                calculateAndRenderPromoStats();
+                // If subordinate page is active, refresh it too
+                if(!document.getElementById('page-subordinate').classList.contains('hidden-el')) {
+                    renderSubordinates();
+                }
+            }
+        });
+    }
+
+    function setPromoDateTab(dateType) {
+        currentPromoDateTab = dateType;
+        document.getElementById('promoDateToday').className = dateType === 'today' ? 'flex-1 py-2 date-tab-active text-sm transition-all' : 'flex-1 py-2 date-tab-inactive text-sm transition-all';
+        document.getElementById('promoDateYesterday').className = dateType === 'yesterday' ? 'flex-1 py-2 date-tab-active text-sm transition-all' : 'flex-1 py-2 date-tab-inactive text-sm transition-all';
+        calculateAndRenderPromoStats();
+    }
+
+    function togglePromoTab(tab) {
+        if(tab === 'direct') {
+            document.getElementById('promo-tab-direct').className = "flex-1 py-3.5 promo-tab-active cursor-pointer transition-all";
+            document.getElementById('promo-tab-team').className = "flex-1 py-3.5 promo-tab-inactive cursor-pointer transition-all";
+            document.getElementById('promo-content-direct').classList.remove('hidden-el');
+            document.getElementById('promo-content-team').classList.add('hidden-el');
+        } else {
+            document.getElementById('promo-tab-team').className = "flex-1 py-3.5 promo-tab-active cursor-pointer transition-all";
+            document.getElementById('promo-tab-direct').className = "flex-1 py-3.5 promo-tab-inactive cursor-pointer transition-all";
+            document.getElementById('promo-content-team').classList.remove('hidden-el');
+            document.getElementById('promo-content-direct').classList.add('hidden-el');
+        }
+    }
+
+    function getTargetDateString(type) {
+        let d = new Date();
+        if(type === 'yesterday') { d.setDate(d.getDate() - 1); }
+        return getStandardDateStr(d); // e.g., '2023-10-26'
+    }
+
+    function calculateAndRenderPromoStats() {
+        if(!allUsersDataCache || !user) return;
+        
+        let targetDate = getTargetDateString(currentPromoDateTab);
+        let myUid = user.uid;
+        
+        // Separate Levels
+        let lv1 = [], lv2 = [], lv3 = [];
+        Object.values(allUsersDataCache).forEach(u => { if(u.referrer == myUid) lv1.push(u); });
+        let lv1Uids = lv1.map(u => u.uid);
+        Object.values(allUsersDataCache).forEach(u => { if(lv1Uids.includes(parseInt(u.referrer))) lv2.push(u); });
+        let lv2Uids = lv2.map(u => u.uid);
+        Object.values(allUsersDataCache).forEach(u => { if(lv2Uids.includes(parseInt(u.referrer))) lv3.push(u); });
+
+        let allTeam = [...lv1, ...lv2, ...lv3];
+
+        // Stats Variables
+        let dirReg = 0, dirDepNum = 0, dirDepAmt = 0, dirBetAmt = 0;
+        let teamReg = 0, teamDepNum = 0, teamDepAmt = 0, teamBetAmt = 0;
+
+        // Process Direct (Level 1)
+        lv1.forEach(u => {
+            // Check Registration
+            if(u.joinDate === targetDate) dirReg++;
+            
+            // Check Deposits for Target Date
+            let hasDeposited = false;
+            if(u.transactions) {
+                let txs = Array.isArray(u.transactions) ? u.transactions : Object.values(u.transactions);
+                txs.forEach(t => {
+                    let tDateStr = new Date(t.timestamp || t.date).toISOString().split('T')[0]; // Safe parse
+                    if(t.type === 'Deposit' && ['accepted','complete','success'].includes(String(t.status).toLowerCase()) && tDateStr === targetDate) {
+                        dirDepAmt += parseFloat(t.amount);
+                        hasDeposited = true;
+                    }
+                });
+            }
+            if(hasDeposited) dirDepNum++;
+
+            // Check Bets for Target Date
+            if(u.betHistory) {
+                let bets = Array.isArray(u.betHistory) ? u.betHistory : Object.values(u.betHistory);
+                bets.forEach(b => {
+                    let bDateStr = new Date(b.timestamp || b.date).toISOString().split('T')[0];
+                    if(bDateStr === targetDate) { dirBetAmt += parseFloat(b.amount); }
+                });
+            }
+        });
+
+        // Process Team (Level 1 + 2 + 3)
+        allTeam.forEach(u => {
+            if(u.joinDate === targetDate) teamReg++;
+            let hasDeposited = false;
+            if(u.transactions) {
+                let txs = Array.isArray(u.transactions) ? u.transactions : Object.values(u.transactions);
+                txs.forEach(t => {
+                    let tDateStr = new Date(t.timestamp || t.date).toISOString().split('T')[0];
+                    if(t.type === 'Deposit' && ['accepted','complete','success'].includes(String(t.status).toLowerCase()) && tDateStr === targetDate) {
+                        teamDepAmt += parseFloat(t.amount);
+                        hasDeposited = true;
+                    }
+                });
+            }
+            if(hasDeposited) teamDepNum++;
+
+            if(u.betHistory) {
+                let bets = Array.isArray(u.betHistory) ? u.betHistory : Object.values(u.betHistory);
+                bets.forEach(b => {
+                    let bDateStr = new Date(b.timestamp || b.date).toISOString().split('T')[0];
+                    if(bDateStr === targetDate) { teamBetAmt += parseFloat(b.amount); }
+                });
+            }
+        });
+
+        // Update UI
+        document.getElementById('st_dir_reg').innerText = dirReg;
+        document.getElementById('st_dir_depNum').innerText = dirDepNum;
+        document.getElementById('st_dir_depAmt').innerText = dirDepAmt.toFixed(2);
+        document.getElementById('st_dir_betAmt').innerText = dirBetAmt.toFixed(2);
+
+        document.getElementById('st_team_reg').innerText = teamReg;
+        document.getElementById('st_team_depNum').innerText = teamDepNum;
+        document.getElementById('st_team_depAmt').innerText = teamDepAmt.toFixed(2);
+        document.getElementById('st_team_betAmt').innerText = teamBetAmt.toFixed(2);
+
+        // Updated: Calculate Total Commission (All time)
+        let totalComm = 0;
+        let dComm = 0, tComm = 0;
+        
+        if(user.transactions) {
+            let txs = Array.isArray(user.transactions) ? user.transactions : Object.values(user.transactions);
+            txs.forEach(t => {
+                if(String(t.type).toLowerCase().includes('commission')) {
+                    totalComm += parseFloat(t.amount);
+                    dComm += parseFloat(t.amount) * 0.6; 
+                    tComm += parseFloat(t.amount) * 0.4; 
+                }
+            });
+        }
+        document.getElementById('yesterdayComm').innerText = totalComm.toFixed(2);
+        document.getElementById('yestDirectComm').innerText = "৳ " + dComm.toFixed(2);
+        document.getElementById('yestTeamComm').innerText = "৳ " + tComm.toFixed(2);
+    }
+
+    function openSubordinatePage() {
+        document.getElementById('page-promotion').classList.add('hidden-el');
+        document.getElementById('page-subordinate').classList.remove('hidden-el');
+        if(Object.keys(allUsersDataCache).length === 0) {
+            fetchPromoData(); // Fetches and calls renderSubordinates internally
+        } else {
+            renderSubordinates();
+        }
+    }
+    
+    function closeSubordinatePage() {
+        document.getElementById('page-subordinate').classList.add('hidden-el');
+        document.getElementById('page-promotion').classList.remove('hidden-el');
+    }
+
+    function renderSubordinates() {
+        if(!allUsersDataCache || Object.keys(allUsersDataCache).length === 0) return;
+        
+        const searchUid = document.getElementById('subSearchInput').value.trim();
+        const levelFilter = document.getElementById('subLevelFilter').value;
+        const targetDate = document.getElementById('subDateFilter').value; // from input date
+        
+        let myUid = user.uid;
+        let lv1 = [], lv2 = [], lv3 = [];
+        
+        Object.values(allUsersDataCache).forEach(u => { if(u.referrer == myUid) { lv1.push({...u, level: 1}); } });
+        let lv1Uids = lv1.map(u => u.uid);
+        Object.values(allUsersDataCache).forEach(u => { if(lv1Uids.includes(parseInt(u.referrer))) { lv2.push({...u, level: 2}); } });
+        let lv2Uids = lv2.map(u => u.uid);
+        Object.values(allUsersDataCache).forEach(u => { if(lv2Uids.includes(parseInt(u.referrer))) { lv3.push({...u, level: 3}); } });
+
+        let allDownlines = [...lv1, ...lv2, ...lv3];
+
+        if(levelFilter !== "All") { allDownlines = allDownlines.filter(u => u.level == levelFilter); }
+        if(searchUid) { allDownlines = allDownlines.filter(u => String(u.uid).includes(searchUid)); }
+
+        let tDepNum = 0, tDepAmt = 0, tBettors = 0, tBetAmt = 0;
+        
+        let html = '';
+        allDownlines.forEach(d => {
+            let uDepAmt = 0;
+            let uBetAmt = 0;
+            let uJoinedTime = d.joinDate || "N/A";
+            
+            // Calculate specific data for the chosen date!
+            if(d.transactions) {
+                let txs = Array.isArray(d.transactions) ? d.transactions : Object.values(d.transactions);
+                txs.forEach(t => {
+                    let tDateStr = new Date(t.timestamp || t.date).toISOString().split('T')[0];
+                    if(t.type === 'Deposit' && ['accepted','complete','success'].includes(String(t.status).toLowerCase()) && tDateStr === targetDate) {
+                        uDepAmt += parseFloat(t.amount);
+                    }
+                });
+            }
+            if(d.betHistory) {
+                let bets = Array.isArray(d.betHistory) ? d.betHistory : Object.values(d.betHistory);
+                bets.forEach(b => {
+                    let bDateStr = new Date(b.timestamp || b.date).toISOString().split('T')[0];
+                    if(bDateStr === targetDate) { uBetAmt += parseFloat(b.amount); }
+                });
+            }
+            
+            if(uDepAmt > 0) { tDepNum++; tDepAmt += uDepAmt; }
+            if(uBetAmt > 0) { tBettors++; tBetAmt += uBetAmt; }
+            
+            // Only show members who actually registered on that day, OR have deposited, OR have betted on that day.
+            if(uJoinedTime === targetDate || uDepAmt > 0 || uBetAmt > 0) {
+                html += `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-3">
+                    <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-gray-100 text-gray-800 font-bold px-2 py-1 rounded text-xs">LV${d.level}</span>
+                            <span class="text-gray-800 font-mono text-[14px] font-bold">${d.uid}</span>
+                        </div>
+                        <span class="text-xs text-gray-400"><i class="far fa-calendar mr-1"></i>${uJoinedTime}</span>
+                    </div>
+                    <div class="flex justify-between text-center">
+                        <div class="flex-1 border-r border-gray-100">
+                            <div class="text-xs text-gray-500 mb-1">Deposit Amount</div>
+                            <div class="text-yellow-600 font-black">৳ ${uDepAmt.toFixed(2)}</div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-xs text-gray-500 mb-1">Bet Amount</div>
+                            <div class="text-blue-600 font-black">৳ ${uBetAmt.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>`;
+            }
+        });
+
+        document.getElementById('sub_stat_depNum').innerText = tDepNum;
+        document.getElementById('sub_stat_depAmt').innerText = tDepAmt.toFixed(2);
+        document.getElementById('sub_stat_bettors').innerText = tBettors;
+        document.getElementById('sub_stat_totBet').innerText = tBetAmt.toFixed(2);
+
+        if(html === '') html = `<div class="bg-white p-6 rounded-xl text-center text-gray-500 border border-gray-200 shadow-sm"><i class="fas fa-box-open text-3xl mb-2 text-gray-300"></i><p class="font-bold text-sm">No specific data found for ${targetDate}</p></div>`;
+        document.getElementById('subordinateListContainer').innerHTML = html;
+    }
+
+    // --- COMMISSION DETAIL MODAL LOGIC ---
+    function openCommissionDetail() {
+        document.getElementById('page-promotion').classList.add('hidden-el');
+        document.getElementById('page-commission').classList.remove('hidden-el');
+        
+        let content = document.getElementById('commissionListContainer');
+        let totalDisplay = document.getElementById('totCommDetail');
+        let html = '';
+        let totalComm = 0;
+        
+        if(user.transactions) { 
+            let txArr = Array.isArray(user.transactions) ? user.transactions : Object.values(user.transactions); 
+            let commHistory = txArr.filter(t => t.type === 'Commission Claim' || t.type === 'Commission Bonus');
+            
+            commHistory.forEach(t => { 
+                let amt = parseFloat(t.amount).toFixed(2);
+                totalComm += parseFloat(t.amount);
+                
+                html += `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-3">
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
+                        <span class="bg-green-100 text-green-700 text-[11px] px-2 py-1 rounded font-bold uppercase"><i class="fas fa-gift mr-1"></i> System Reward</span>
+                        <span class="text-green-600 text-[16px] font-black">+৳ ${amt}</span>
+                    </div>
+                    <div class="text-[12px] text-gray-500 flex justify-between">
+                        <span>Date & Time</span>
+                        <span class="font-mono text-gray-700 font-bold">${t.date}</span>
+                    </div>
+                </div>`; 
+            }); 
+        }
+        
+        totalDisplay.innerText = totalComm.toFixed(2);
+        if(html === '') html = '<div class="bg-white p-6 rounded-xl text-center text-gray-500 border border-gray-200 shadow-sm mt-5"><i class="fas fa-history text-3xl mb-2 text-gray-300"></i><p class="font-bold text-sm">No commission history found.</p></div>';
+        content.innerHTML = html;
+    }
+    
+    function closeCommissionDetail() {
+        document.getElementById('page-commission').classList.add('hidden-el');
+        document.getElementById('page-promotion').classList.remove('hidden-el');
+    }
+    // ==============================================================
+
+    function getLiveNumber(methodName) {
+        if(!depositNumbers) return "Contact Admin";
+        if(methodName === 'Bkash') { return depositNumbers.Bkash || depositNumbers.bkash || depositNumbers.BKASH || depositNumbers.bKash || "Not Found"; } 
+        else if (methodName === 'Nagad') { return depositNumbers.Nagad || depositNumbers.nagad || depositNumbers.NAGAD || "Not Found"; }
+        return "Contact Admin";
+    }
+
+    function selectTopMethod(m) {
+        selectedTopMethod = m;
+        document.getElementById('top-m-Bkash').classList.remove('top-method-active');
+        document.getElementById('top-m-Nagad').classList.remove('top-method-active');
+        document.getElementById('top-m-'+m).classList.add('top-method-active');
+        updateChannelList(m);
+    }
+
+    function updateChannelList(method) {
+        const grid = document.getElementById('channelGrid');
+        grid.innerHTML = '';
+        const channels = channelData[method];
+        channels.forEach((ch, index) => {
+            const isActive = index === 0 ? 'channel-active' : '';
+            if(index === 0) selectedChannel = ch.name; 
+            grid.innerHTML += `<div onclick="selectChannel('${ch.name}')" id="ch-${ch.name}" class="channel-card ${isActive}"><span class="c-title font-bold text-sm text-gray-300 block">${ch.name}</span><span class="c-sub text-[10px] text-gray-500 font-bold block mt-1">Balance:${ch.limit}</span></div>`;
+        });
+        document.getElementById('bottomMethodDisplay').innerText = selectedChannel;
+    }
+
+    function selectChannel(chName) {
+        selectedChannel = chName;
+        document.querySelectorAll('.channel-card').forEach(el => el.classList.remove('channel-active'));
+        document.getElementById('ch-'+chName).classList.add('channel-active');
+        document.getElementById('bottomMethodDisplay').innerText = chName;
+    }
+
+    function setDepAmount(a) { 
+        document.getElementById('newDepAmountInput').value = a; 
+        document.querySelectorAll('.amt-btn').forEach(b => b.classList.remove('amt-btn-active'));
+        document.getElementById('amt-btn-'+a).classList.add('amt-btn-active');
+    }
+    
+    function removeActiveAmtBtn() { document.querySelectorAll('.amt-btn').forEach(b => b.classList.remove('amt-btn-active')); }
+
+    function initiateDeposit() { 
+        const amt = document.getElementById('newDepAmountInput').value; 
+        if(amt < 100) return alert("Minimum deposit is 100 BDT"); 
+        openGatewayModal(amt, selectedTopMethod);
+    }
+
+    function openGatewayModal(amount, method) {
+        document.getElementById('gtAmount').innerText = amount; document.getElementById('gtAmountWarning').innerText = amount;
+        const box = document.getElementById('gtMethodBox'); const logoBox = document.getElementById('gtMethodLogoBox'); const mName = document.getElementById('gtMethodName'); const textM = document.getElementById('gtMethodText'); const footerM = document.getElementById('gtMethodFooter');
+        
+        if(method === 'Bkash') {
+            box.style.backgroundColor = '#df146e'; 
+            logoBox.innerHTML = `<svg class="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#E2136E"/><polygon points="25,35 50,55 25,75" fill="#FFFFFF"/><polygon points="50,55 75,35 100,55 75,75" fill="#FFFFFF"/></svg>`;
+            mName.innerText = 'BKASH Deposit'; textM.innerText = 'BKASH'; footerM.innerText = 'BKASH';
+        } else {
+            box.style.backgroundColor = '#ed1c24'; 
+            logoBox.innerHTML = `<svg class="w-full h-full p-1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" rx="50" fill="#ED1C24"/><path d="M50 20 A30 30 0 1 1 20 50" fill="none" stroke="#F7931E" stroke-width="12" stroke-linecap="round"/><path d="M50 35 A15 15 0 1 1 35 50" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/><circle cx="50" cy="50" r="5" fill="#F7931E"/></svg>`;
+            mName.innerText = 'NAGAD Deposit'; textM.innerText = 'NAGAD'; footerM.innerText = 'NAGAD';
+        }
+        
+        document.getElementById('adminPhone').innerText = getLiveNumber(method); document.getElementById('depTrx').value = ""; document.getElementById('gatewayModal').classList.remove('hidden-el');
+    }
+
+    function submitGateway() {
+        const amt = parseFloat(document.getElementById('gtAmount').innerText); const trx = document.getElementById('depTrx').value.trim();
+        if(!trx) return alert(" ট্রানজেকশন আইডি লেখুন");
+        if(!user.transactions) user.transactions = []; let txArr = Array.isArray(user.transactions) ? user.transactions : Object.values(user.transactions);
+        
+        const orderNum = "RC" + new Date().getTime() + Math.floor(Math.random()*1000);
+        txArr.unshift({ type: 'Deposit', amount: amt, method: selectedTopMethod, channel: selectedChannel, trx: trx, status: 'Pending', date: new Date().toLocaleString(), timestamp: Date.now(), orderNum: orderNum, wagerAdded: false });
+        user.transactions = txArr; database.ref('users/'+user.phone).set(user);
+        alert("সেন্ড মানি করে সঠিক ট্রানজেকশন আইডি দিবেন। ভুল ট্রানজেকশন দিলে টাকা এড হবে না✅"); hideModal('gatewayModal'); document.getElementById('newDepAmountInput').value = ""; removeActiveAmtBtn(); showHistoryModal('Deposit');
+    }
+
+    function initTimer() {
+        if(gameTimerInterval) clearInterval(gameTimerInterval);
+        const tick = () => {
+            const nowMs = new Date().getTime() + serverOffset; const bdTime = new Date(nowMs + 21600000); 
+            const y = bdTime.getUTCFullYear(); const m = String(bdTime.getUTCMonth() + 1).padStart(2, '0'); const d = String(bdTime.getUTCDate()).padStart(2, '0'); const dateStr = `${y}${m}${d}`;
+            const totalSeconds = (bdTime.getUTCHours() * 3600) + (bdTime.getUTCMinutes() * 60) + bdTime.getUTCSeconds();
+            const periodIdx = Math.floor(totalSeconds / 30) + 1; const periodId = `${dateStr}1${String(periodIdx).padStart(4,'0')}`;
+            if(currentLivePeriod !== 0 && periodId !== currentLivePeriod) { processResult(currentLivePeriod); }
+            currentLivePeriod = periodId; document.getElementById('periodId').innerText = periodId;
+            const rem = 30 - (totalSeconds % 30); const rStr = String(rem).padStart(2,'0');
+            document.getElementById('t-sec-1').innerText = rStr[0]; document.getElementById('t-sec-2').innerText = rStr[1];
+            if(rem <= 5) document.getElementById('betOverlay').classList.remove('hidden-el'); else document.getElementById('betOverlay').classList.add('hidden-el');
+        }; tick(); gameTimerInterval = setInterval(tick, 1000);
+    }
+    function fetchHistory() { database.ref('global_history').limitToLast(50).on('value', s => { if(s.exists()) { const rawData = Object.values(s.val()).sort((a,b) => parseInt(b.period) - parseInt(a.period)); historyData = rawData; renderHistory(); } }); }
+    function renderHistory() {
+        const con = document.getElementById('globalHistory'); let html = ''; let displayData = [];
+        if(currentLivePeriod !== 0) {
+            let latestPeriod = parseInt(currentLivePeriod);
+            for(let i = 1; i <= 20; i++) { let p = (latestPeriod - i).toString(); let dbRecord = historyData.find(x => x.period === p); if(dbRecord) { displayData.push(dbRecord); } else { let seed = parseInt(p); let x = Math.sin(seed * 12.9898) * 43758.5453; let pseudoNum = Math.floor((x - Math.floor(x)) * 10); displayData.push({ period: p, num: pseudoNum, size: pseudoNum >= 5 ? 'Big' : 'Small' }); } }
+        } else { displayData = historyData.slice(0, 20); }
+        displayData.forEach(r => {
+            let num = parseInt(r.num); let colorClass = num===0||num===5 ? 'text-purple-500' : (num%2===0 ? 'text-red-500' : 'text-green-500');
+            let dots = ''; if(num===0) dots = `<span class="dot dot-red"></span><span class="dot dot-violet"></span>`; else if(num===5) dots = `<span class="dot dot-green"></span><span class="dot dot-violet"></span>`; else if(num%2===0) dots = `<span class="dot dot-red"></span>`; else dots = `<span class="dot dot-green"></span>`;
+            html += `<div class="flex justify-between items-center p-3 border-b border-[#222] text-xs"><div class="w-1/3 text-gray-400 font-mono">${r.period}</div><div class="w-1/3 text-center text-xl font-black ${colorClass}">${num}</div><div class="w-1/3 text-right flex justify-end items-center gap-2"><span class="font-bold text-gray-300 uppercase">${r.size}</span><div>${dots}</div></div></div>`;
+        });
+        con.innerHTML = html;
+    }
+    async function processResult(targetPeriod) {
+        const snap = await database.ref('global_history/'+targetPeriod).once('value'); if(snap.exists()) { checkWin(targetPeriod, snap.val().num); return; }
+        let winningNum = 0;
+        if(adminForcedResult !== null && adminForcedResult !== "") { winningNum = parseInt(adminForcedResult); } else {
+            const betsSnap = await database.ref(`live_bets/${targetPeriod}`).once('value'); const bets = betsSnap.val();
+            if (!bets) { winningNum = Math.floor(Math.random() * 10); } else {
+                let minPayout = Infinity; let bestNums = [];
+                for(let i=0; i<=9; i++) {
+                    let payout = 0; let size = i >= 5 ? 'Big' : 'Small'; let isRed = [0,2,4,6,8].includes(i); let isGreen = [1,3,5,7,9].includes(i); let isViolet = (i === 0 || i === 5);
+                    payout += (parseFloat(bets[String(i)]) || 0) * 9; payout += (parseFloat(bets[size]) || 0) * 2;
+                    if(isRed) payout += (parseFloat(bets['Red']) || 0) * (i === 0 ? 1.5 : 2); if(isGreen) payout += (parseFloat(bets['Green']) || 0) * (i === 5 ? 1.5 : 2); if(isViolet) payout += (parseFloat(bets['Violet']) || 0) * 4.5;
+                    if (payout < minPayout) { minPayout = payout; bestNums = [i]; } else if (payout === minPayout) { bestNums.push(i); }
+                }
+                winningNum = bestNums[Math.floor(Math.random() * bestNums.length)];
+            }
+        }
+        const size = winningNum >= 5 ? 'Big' : 'Small'; const ref = database.ref('global_history/'+targetPeriod);
+        ref.transaction((currentData) => { if (currentData === null) { return { period: targetPeriod, num: winningNum, size: size }; } return; }, (error, committed, snapshot) => { if (!error && snapshot && snapshot.val()) { checkWin(targetPeriod, snapshot.val().num); } });
+    }
+
+    let currentBet = {};
+    function selectBet(type) {
+        currentBet = { type, amount: 1 }; const el = document.getElementById('selectedType'); el.innerText = type;
+        if(type=='Green') el.className = 'text-4xl font-black uppercase text-green-500 drop-shadow-md'; else if(type=='Red') el.className = 'text-4xl font-black uppercase text-red-500 drop-shadow-md'; else if(type=='Violet') el.className = 'text-4xl font-black uppercase text-purple-500 drop-shadow-md'; else el.className = 'text-4xl font-black uppercase text-white drop-shadow-md';
+        document.getElementById('betConfirmModal').classList.remove('hidden-el');
+    }
+    function adjustBet(n) { let el = document.getElementById('finalAmount'); let v = parseInt(el.value) + n; if(v < 1) v = 1; el.value = v; }
+    
+    function confirmBet() {
+        const amt = parseInt(document.getElementById('finalAmount').value);
+        if(user.balance < amt) return alert("Insufficient Balance");
+        user.balance -= amt;
+        let currentWager = parseFloat(user.wager_left || 0); currentWager -= amt; if(currentWager < 0) currentWager = 0; user.wager_left = currentWager;
+        const bet = { period: currentLivePeriod, selection: currentBet.type, amount: amt, status: 'PENDING', date: new Date().toISOString(), timestamp: Date.now() };
+        if(!user.betHistory) user.betHistory = []; let betsArr = Array.isArray(user.betHistory) ? user.betHistory : Object.values(user.betHistory); betsArr.unshift(bet); user.betHistory = betsArr;
+        database.ref(`live_bets/${currentLivePeriod}/${currentBet.type}`).transaction(v => (parseFloat(v)||0)+amt); database.ref('users/'+user.phone).set(user); hideModal('betConfirmModal');
+    }
+
+    function checkWin(period, num) {
+        if(!user || !user.betHistory) return; let totalWin = 0; let totalLoss = 0; let updated = false;
+        const size = num >= 5 ? 'Big' : 'Small'; const isRed = [0,2,4,6,8].includes(num); const isGreen = [1,3,5,7,9].includes(num);
+        let betsArr = Array.isArray(user.betHistory) ? user.betHistory : Object.values(user.betHistory);
+        betsArr.forEach(b => {
+            if(b.period == period && b.status === 'PENDING') {
+                let win = false; let mult = 0;
+                if(b.selection == num) { win=true; mult=9; } else if(b.selection == size) { win=true; mult=2; } else if(b.selection == 'Green' && isGreen) { win=true; mult=(num==5 ? 1.5 : 2); } else if(b.selection == 'Red' && isRed) { win=true; mult=(num==0 ? 1.5 : 2); } else if(b.selection == 'Violet' && (num==0||num==5)) { win=true; mult=4.5; }
+                if(win) { b.status = 'WIN'; b.wonAmt = b.amount * mult * 0.98; user.balance += b.wonAmt; totalWin += b.wonAmt; } else { b.status = 'LOSS'; totalLoss += b.amount; }
+                updated = true;
+            }
+        });
+        if(updated) { user.betHistory = betsArr; database.ref('users/'+user.phone).set(user); if(totalWin > 0) showResultPopup('win', totalWin); else if (totalLoss > 0) showResultPopup('loss', totalLoss); }
+    }
+    function showResultPopup(type, amt) {
+        const popup = document.getElementById('resultPopup'); const header = document.getElementById('resHeader'); const title = document.getElementById('resTitle'); const icon = document.getElementById('resIcon'); const msg = document.getElementById('resMsg'); const amountEl = document.getElementById('resAmount'); const confettiCon = document.getElementById('confettiContainer');
+        if(type === 'win') {
+            header.className = "h-40 flex items-center justify-center flex-col relative overflow-hidden bg-gradient-to-b from-green-600 to-green-400"; title.innerText = "CONGRATULATIONS"; icon.innerText = "WINGO 30"; msg.innerText = "YOU ARE WIN"; msg.className = "text-green-500 font-bold text-xs uppercase tracking-widest mb-2"; amountEl.innerText = "৳" + amt.toFixed(2); amountEl.className = "text-5xl font-black mb-8 tracking-tighter text-green-500";
+            let html = ''; for(let i=0; i<30; i++) { let left = Math.random() * 100; let animDelay = Math.random() * 2; html += `<div class="confetti" style="left:${left}%; animation-delay:${animDelay}s;"></div>`; } confettiCon.innerHTML = html;
+        } else {
+            header.className = "h-40 flex items-center justify-center flex-col relative overflow-hidden bg-gradient-to-b from-red-600 to-red-400"; title.innerText = "SORRY"; icon.innerText = ""; msg.innerText = "BAD LUCK! YOU LOSS"; msg.className = "text-red-500 font-bold text-xs uppercase tracking-widest mb-2"; amountEl.innerText = "- ৳ " + amt.toFixed(2); amountEl.className = "text-5xl font-black mb-8 tracking-tighter text-red-500"; confettiCon.innerHTML = '';
+        }
+        popup.classList.remove('hidden-el');
+    }
+    function closeResultPopup() { document.getElementById('resultPopup').classList.add('hidden-el'); document.getElementById('confettiContainer').innerHTML = ''; }
+    function renderMyHistory() {
+        const div = document.getElementById('personalHistory'); if(!user || !user.betHistory) return; let betsArr = Array.isArray(user.betHistory) ? user.betHistory : Object.values(user.betHistory); let html = '';
+        betsArr.slice(0,20).forEach(b => { let color = b.status==='WIN' ? 'text-green-500' : (b.status==='LOSS' ? 'text-red-500' : 'text-yellow-500'); html += `<div class="flex justify-between p-3 border-b border-[#222] text-xs"><div><div class="text-gray-400 mb-1">${b.period}</div><div class="text-white font-bold">${b.selection}</div></div><div class="text-right"><div class="${color} font-bold mb-1">${b.status}</div><div class="text-white">${b.status==='WIN' ? '+'+(b.wonAmt||0).toFixed(2) : '-'+b.amount}</div></div></div>`; }); div.innerHTML = html;
+    }
+    function setActivityTab(t) {
+        document.getElementById('act-tab-bets').className = t==='bets' ? 'flex-1 py-4 cursor-pointer text-gold border-b-2 border-gold' : 'flex-1 py-4 cursor-pointer text-gray-500'; document.getElementById('act-tab-finance').className = t==='finance' ? 'flex-1 py-4 cursor-pointer text-gold border-b-2 border-gold' : 'flex-1 py-4 cursor-pointer text-gray-500';
+        document.getElementById('activity-bets').className = t==='bets' ? 'p-0' : 'hidden-el'; document.getElementById('activity-finance').className = t==='finance' ? 'p-0' : 'hidden-el'; renderActivity();
+    }
+    function renderActivity() {
+        if(!user) return; const betCon = document.getElementById('activity-bets'); if(user.betHistory) { let betsArr = Array.isArray(user.betHistory) ? user.betHistory : Object.values(user.betHistory); let h = ''; betsArr.forEach(b => { let st = b.status==='WIN'?'text-green-500':(b.status==='LOSS'?'text-red-500':'text-yellow-500'); h += `<div class="bg-dark-card m-2 p-3 rounded-lg flex justify-between text-xs"><div><div class="text-gray-400 font-mono">${b.period}</div><div class="font-bold text-white mt-1">${b.selection} <span class="text-gray-500">(${b.amount})</span></div></div><div class="text-right"><div class="${st} font-black">${b.status}</div><div class="text-gray-500 mt-1">${new Date(b.date).toLocaleTimeString()}</div></div></div>`; }); betCon.innerHTML = h; }
+        const finCon = document.getElementById('activity-finance'); if(user.transactions) { let txArr = Array.isArray(user.transactions) ? user.transactions : Object.values(user.transactions); let h = ''; txArr.forEach(t => { let stColor = ['accepted','complete','success'].includes(String(t.status).toLowerCase()) ? 'text-green-500' : (String(t.status).toLowerCase()==='rejected' ? 'text-red-500' : 'text-yellow-500'); h += `<div class="bg-dark-card m-2 p-3 rounded-lg flex justify-between text-xs"><div><div class="font-bold text-white uppercase">${t.type}</div><div class="text-gray-500 mt-1">${t.date}</div></div><div class="text-right"><div class="text-gold font-bold text-sm">৳ ${t.amount}</div><div class="${stColor} font-black uppercase mt-1 text-[10px]">${t.status}</div></div></div>`; }); finCon.innerHTML = h; }
+    }
+    function setWalletTab(t) { currentWalletTab = t; document.getElementById('view-deposit').classList.add('hidden-el'); document.getElementById('view-withdraw').classList.add('hidden-el'); const depBtn = document.getElementById('wTab-deposit'); const witBtn = document.getElementById('wTab-withdraw'); if(t==='deposit') { depBtn.style = "background:#d4af37; color:black; font-weight:bold;"; witBtn.style = "background:transparent; color:#888;"; } else { witBtn.style = "background:#d4af37; color:black; font-weight:bold;"; depBtn.style = "background:transparent; color:#888;"; } document.getElementById('view-'+t).classList.remove('hidden-el'); }
+    function checkAndShowBindWallet() { if(user.wallet) return alert("Wallet Bound: "+user.wallet.type+" - "+user.wallet.num); document.getElementById('bindWalletModal').classList.remove('hidden-el'); }
+    function setBindType(t) { document.getElementById('walletType').value = t; document.getElementById('bind-Bkash').classList.remove('wallet-card-selected'); document.getElementById('bind-Nagad').classList.remove('wallet-card-selected'); document.getElementById('bind-'+t).classList.add('wallet-card-selected'); }
+    function saveWallet() { const type = document.getElementById('walletType').value; const num = document.getElementById('walletNum').value; if(!num || !type) return alert("Select Type & Enter Number"); user.wallet = { type, num }; database.ref('users/'+user.phone).set(user); hideModal('bindWalletModal'); alert("Bound Successfully"); }
+    function openGiftModal() { switchTab('gift'); }
+    function redeemGift() {
+        const code = document.getElementById('giftInputCode').value.trim(); if(!code) return;
+        database.ref('gift_codes/'+code).once('value', s => {
+            if(s.exists() && (s.val().active || s.val().status==='active')) {
+                const amt = parseFloat(s.val().amount); user.balance += amt;
+                user.wager_left = (parseFloat(user.wager_left) || 0) + (amt * 2);
+                if(!user.giftHistory) user.giftHistory = []; let gArr = Array.isArray(user.giftHistory) ? user.giftHistory : Object.values(user.giftHistory); gArr.unshift({code, amount: amt, date: new Date().toLocaleString(), timestamp: Date.now()}); user.giftHistory = gArr;
+                database.ref('gift_codes/'+code).update({ active: false, status: 'used' }); database.ref('users/'+user.phone).set(user);
+                alert("Claimed ৳ "+amt); document.getElementById('giftInputCode').value = ""; renderGiftHistory(); updateUI();
+            } else alert("Invalid/Used Code");
+        });
+    }
+    function renderGiftHistory() {
+        if(!user) return; const list = document.getElementById('giftHistoryList'); const totalEl = document.getElementById('giftTotalAmount'); let total = 0; let html = '';
+        if(user.giftHistory) { let gArr = Array.isArray(user.giftHistory) ? user.giftHistory : Object.values(user.giftHistory); gArr.forEach(g => { total += parseFloat(g.amount); html += `<div class="history-card status-complete flex justify-between items-center"><div><div class="text-sm font-bold text-white mb-1">Gift Received</div><div class="text-xs text-gray-500">${g.date}</div></div><div class="text-right"><div class="text-gold font-black text-lg">+৳ ${g.amount}</div><div class="text-[10px] text-green-500 font-bold uppercase">Success</div></div></div>`; }); }
+        if(html === '') html = '<div class="text-center text-gray-600 text-sm mt-10">No gifts claimed yet.</div>'; list.innerHTML = html; totalEl.innerText = total.toFixed(2);
+    }
+    function initiateWithdraw() {
+        if(!user.wallet) return alert("Bind Wallet");
+        const amt = parseFloat(document.getElementById('newWithAmountInput').value); if(isNaN(amt) || amt < 500) return alert("Min Withdrawal 500"); if(user.balance < amt) return alert("Low Balance");
+        let left = parseFloat(user.wager_left || 0);
+        if(left > 0) return alert("Turnover Pending! You must bet ৳" + left.toFixed(2) + " more to withdraw.");
+        user.balance -= amt;
+        if(!user.transactions) user.transactions = []; let txArr = Array.isArray(user.transactions) ? user.transactions : Object.values(user.transactions);
+        const orderNum = "WD" + new Date().getTime() + Math.floor(Math.random()*1000);
+        txArr.unshift({ type: 'Withdraw', amount: amt, method: user.wallet.type, status: 'Pending', date: new Date().toLocaleString(), timestamp: Date.now(), orderNum: orderNum }); user.transactions = txArr;
+        database.ref('withdraw_requests').push({ phone: user.phone, uid: user.uid, amount: amt, method: user.wallet.type, number: user.wallet.num, status: 'Pending', date: new Date().toLocaleString(), timestamp: Date.now() });
+        database.ref('users/'+user.phone).set(user); alert("Request Sent"); document.getElementById('newWithAmountInput').value = "";
+    }
+    
+    function showHistoryModal(type) {
+        document.getElementById('historyModalTitle').innerText = type + " history"; 
+        const content = document.getElementById('historyListContent'); let html = '';
+        
+        if(user.transactions) { 
+            let txArr = Array.isArray(user.transactions) ? user.transactions : Object.values(user.transactions); 
+            txArr.filter(t => t.type === type).forEach(t => { 
+                let st = String(t.status).toLowerCase(); 
+                let statusText = 'To Be Paid'; let statusColor = 'text-blue-500';
+                
+                if(['accepted','complete','success'].includes(st)) { 
+                    statusText = 'Complete'; statusColor = 'text-green-600'; 
+                } else if(st === 'rejected' || st === 'failed') { 
+                    statusText = 'Failed'; statusColor = 'text-red-500'; 
+                }
+                
+                let orderNum = t.orderNum || ('TRX'+Math.floor(Math.random()*1000000)); 
+                let channelType = t.channel || t.method || 'System';
+                
+                html += `
+                <div class="history-card-light">
+                    <div class="flex justify-between items-center p-3 border-b border-gray-100">
+                        <span class="bg-green-500 text-white text-[12px] px-3 py-1 rounded shadow-sm font-bold uppercase">${t.type}</span>
+                        <span class="${statusColor} text-[13px] font-bold">${statusText}</span>
+                    </div>
+                    <div class="p-3 text-[12px] text-gray-500 space-y-2.5 font-medium">
+                        <div class="flex justify-between"><span>Balance</span><span class="text-yellow-600 font-bold text-sm">৳ ${parseFloat(t.amount).toFixed(2)}</span></div>
+                        <div class="flex justify-between"><span>Type</span><span class="text-gray-700">${channelType}</span></div>
+                        <div class="flex justify-between"><span>Time</span><span class="text-gray-700">${t.date}</span></div>
+                        <div class="flex justify-between items-center">
+                            <span>Order number</span>
+                            <div class="flex items-center gap-1.5 text-gray-500">
+                                <span class="font-mono text-[11px]">${orderNum}</span>
+                                <i class="far fa-copy text-lg cursor-pointer active:scale-90 transition" onclick="navigator.clipboard.writeText('${orderNum}'); alert('Copied');"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>`; 
+            }); 
+        }
+        if(html === '') html = '<div class="text-center text-gray-500 mt-10 font-bold">No more</div>'; 
+        content.innerHTML = html; 
+        document.getElementById('historyModal').classList.remove('hidden-el');
+    }
+
+    function openGame() { document.getElementById('gamePage').classList.remove('hidden-el'); } function closeGame() { document.getElementById('gamePage').classList.add('hidden-el'); }
+    function toggleGameTab(t) { if(t==='global') { document.getElementById('globalHistory').classList.remove('hidden-el'); document.getElementById('personalHistory').classList.add('hidden-el'); document.getElementById('tabGlobal').className = "text-gold font-bold text-sm border-b-2 border-gold pb-2 uppercase tracking-wide"; document.getElementById('tabPersonal').className = "text-gray-500 font-bold text-sm pb-2 uppercase tracking-wide"; } else { document.getElementById('globalHistory').classList.add('hidden-el'); document.getElementById('personalHistory').classList.remove('hidden-el'); document.getElementById('tabPersonal').className = "text-gold font-bold text-sm border-b-2 border-gold pb-2 uppercase tracking-wide"; document.getElementById('tabGlobal').className = "text-gray-500 font-bold text-sm pb-2 uppercase tracking-wide"; } }
+    function hideModal(id) { document.getElementById(id).classList.add('hidden-el'); } function copyRefLink() { const link = document.getElementById('referralLink'); link.select(); document.execCommand('copy'); alert("Copied"); } function copyAdminPhone() { const t = document.getElementById('adminPhone').innerText; navigator.clipboard.writeText(t); alert("%u09A8%u09BE%u09AE%u09CD%u09AC%u09BE%u09B0 %u0995%u09AA%u09BF %u0995%u09B0%u09BE %u09B9%u09DF%u09C7%u099B%u09C7!"); } function logout() { localStorage.removeItem('bd99_user'); location.reload(); } function refreshBalance() { location.reload(); }
+    
+</script>
+</body>
+</html>
